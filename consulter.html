@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liste de courses — FamilyPriority</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #1D9E75; --green-dark: #0F6E56; --green-light: #E1F5EE; --green-mid: #9FE1CB;
+    --red: #E24B4A; --red-light: #FCEBEB; --red-dark: #A32D2D;
+    --amber: #BA7517; --amber-light: #FAEEDA;
+    --gray-bg: #F5F5F2; --gray-border: #E8E6DE; --gray-text: #888780; --text: #1a1a18; --white: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--gray-bg); min-height: 100vh; display: flex; justify-content: center; padding: 24px 16px; }
+  .phone { width: 390px; background: var(--white); border-radius: 32px; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.12); border: 1px solid var(--gray-border); display: flex; flex-direction: column; }
+  .topbar { background: var(--green); padding: 20px; display: flex; align-items: center; justify-content: space-between; }
+  .topbar-title { color: white; font-size: 17px; font-weight: 500; }
+  .topbar-add { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; }
+  .progress-wrap { background: var(--green); padding: 0 20px 16px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--green-mid); margin-bottom: 6px; }
+  .progress-bar { height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; background: white; width: 58%; }
+  .search { padding: 14px 16px; }
+  .search input { width: 100%; border: 1px solid var(--gray-border); border-radius: 10px; padding: 11px 14px 11px 36px; font-size: 14px; color: var(--text); background: var(--gray-bg); outline: none; font-family: 'DM Sans', sans-serif; }
+  .search-wrap { position: relative; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); }
+  .filters { display: flex; gap: 8px; padding: 0 16px 14px; overflow-x: auto; }
+  .filter { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; border: 1px solid var(--gray-border); background: var(--white); color: var(--gray-text); cursor: pointer; white-space: nowrap; }
+  .filter.active { background: var(--green-light); border-color: var(--green); color: var(--green-dark); }
+  .section-label { font-size: 11px; font-weight: 600; color: var(--gray-text); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 16px 8px; }
+  .item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--gray-border); cursor: pointer; transition: background 0.15s; }
+  .item:hover { background: var(--gray-bg); }
+  .item-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .item-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .item-sub { font-size: 11px; color: var(--gray-text); margin-top: 2px; }
+  .item-right { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+  .badge.urgent { background: var(--red-light); color: var(--red-dark); }
+  .badge.ok { background: var(--green-light); color: var(--green-dark); }
+  .badge.pending { background: var(--amber-light); color: var(--amber); }
+  .check { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--gray-border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; transition: all 0.2s; }
+  .check.done { background: var(--green); border-color: var(--green); }
+  .item-name.done { text-decoration: line-through; color: var(--gray-text); }
+  .fab { position: fixed; bottom: 100px; right: calc(50% - 195px + 16px); width: 52px; height: 52px; border-radius: 50%; background: var(--green); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 16px rgba(29,158,117,0.4); }
+  .bottomnav { display: flex; background: var(--white); border-top: 1px solid var(--gray-border); padding: 8px 0 20px; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 6px 0; }
+  .nav-icon { width: 22px; height: 22px; }
+  .nav-label { font-size: 10px; color: var(--gray-text); font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="topbar">
+    <div class="topbar-title">Liste de courses</div>
+    <button class="topbar-add" onclick="window.location.href='ajouter_produit.html'">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+    </button>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>Progression des courses</span>
+      <span style="color:white;font-weight:600">7 / 12 produits</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+  </div>
+  <div class="search">
+    <div class="search-wrap">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#888780" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/></svg>
+      <input type="text" placeholder="Rechercher un produit..."/>
+    </div>
+  </div>
+  <div class="filters">
+    <div class="filter active">Tous</div>
+    <div class="filter">Urgents</div>
+    <div class="filter">En cours</div>
+    <div class="filter">Achetés</div>
+    <div class="filter">Alimentation</div>
+    <div class="filter">Hygiène</div>
+  </div>
+
+  <div class="section-label">Urgents (2)</div>
+
+  <div class="item" onclick="window.location.href='supprimer_produit.html'">
+    <div class="check" id="c1" onclick="event.stopPropagation();toggleCheck('c1','n1')"></div>
+    <div class="item-icon" style="background:#FCEBEB">🥛</div>
+    <div>
+      <div class="item-name" id="n1">Lait entier</div>
+      <div class="item-sub">2 L · Ajouté par Oumar · 08h05</div>
+    </div>
+    <div class="item-right">
+      <span class="badge urgent">Urgent</span>
+    </div>
+  </div>
+
+  <div class="item">
+    <div class="check" id="c2" onclick="event.stopPropagation();toggleCheck('c2','n2')"></div>
+    <div class="item-icon" style="background:#FCEBEB">🍞</div>
+    <div>
+      <div class="item-name" id="n2">Pain de mie</div>
+      <div class="item-sub">1 paquet · Ajouté par Fatou · 09h30</div>
+    </div>
+    <div class="item-right">
+      <span class="badge urgent">Urgent</span>
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-top:8px">En cours (3)</div>
+
+  <div class="item">
+    <div class="check" id="c3" onclick="event.stopPropagation();toggleCheck('c3','n3')"></div>
+    <div class="item-icon" style="background:#FAEEDA">🍚</div>
+    <div>
+      <div class="item-name" id="n3">Riz basmati</div>
+      <div class="item-sub">2 kg · Mamadou · 10h15</div>
+    </div>
+    <div class="item-right">
+      <span class="badge pending">En cours</span>
+    </div>
+  </div>
+
+  <div class="item">
+    <div class="check" id="c4" onclick="event.stopPropagation();toggleCheck('c4','n4')"></div>
+    <div class="item-icon" style="background:#FAEEDA">🍝</div>
+    <div>
+      <div class="item-name" id="n4">Pâtes spaghetti</div>
+      <div class="item-sub">500 g · Ibrahima · 11h00</div>
+    </div>
+    <div class="item-right">
+      <span class="badge pending">En cours</span>
+    </div>
+  </div>
+
+  <div class="item">
+    <div class="check" id="c5" onclick="event.stopPropagation();toggleCheck('c5','n5')"></div>
+    <div class="item-icon" style="background:#FAEEDA">🍅</div>
+    <div>
+      <div class="item-name" id="n5">Tomates cerise</div>
+      <div class="item-sub">500 g · Mariama · 11h30</div>
+    </div>
+    <div class="item-right">
+      <span class="badge pending">En cours</span>
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-top:8px">Achetés (7)</div>
+
+  <div class="item">
+    <div class="check done" id="c6" onclick="event.stopPropagation();toggleCheck('c6','n6')">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg>
+    </div>
+    <div class="item-icon" style="background:#E1F5EE">🫒</div>
+    <div>
+      <div class="item-name done" id="n6">Huile d'olive</div>
+      <div class="item-sub">75 cl · Aïssatou · 14h00</div>
+    </div>
+    <div class="item-right">
+      <span class="badge ok">Acheté</span>
+    </div>
+  </div>
+
+  <div class="item">
+    <div class="check done" id="c7" onclick="event.stopPropagation();toggleCheck('c7','n7')">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg>
+    </div>
+    <div class="item-icon" style="background:#E1F5EE">🍗</div>
+    <div>
+      <div class="item-name done" id="n7">Poulet</div>
+      <div class="item-sub">1,2 kg · Seydou · 16h10</div>
+    </div>
+    <div class="item-right">
+      <span class="badge ok">Acheté</span>
+    </div>
+  </div>
+
+  <div style="height:16px"></div>
+
+  <div class="bottomnav">
+    <div class="nav-item" onclick="window.location.href='tableau_de_bord.html'">
+      <svg class="nav-icon" viewBox="0 0 22 22" fill="none" stroke="#888780" stroke-width="1.8"><rect x="3" y="3" width="16" height="16" rx="3"/><line x1="7" y1="8" x2="15" y2="8"/><line x1="7" y1="11" x2="15" y2="11"/><line x1="7" y1="14" x2="11" y2="14"/></svg>
+      <span class="nav-label">Tableau</span>
+    </div>
+    <div class="nav-item active">
+      <svg class="nav-icon" viewBox="0 0 22 22" fill="none" stroke="#1D9E75" stroke-width="1.8"><path d="M8 3H4v16h14V3h-4"/><rect x="8" y="1" width="6" height="4" rx="1"/><line x1="8" y1="10" x2="14" y2="10"/><line x1="8" y1="13" x2="12" y2="13"/></svg>
+      <span class="nav-label" style="color:#1D9E75">Liste</span>
+    </div>
+    <div class="nav-item" onclick="window.location.href='rejoindre_famille.html'">
+      <svg class="nav-icon" viewBox="0 0 22 22" fill="none" stroke="#888780" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 19c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2"/><path d="M17 14c2 0 3.5 1.5 3.5 3.5"/></svg>
+      <span class="nav-label">Famille</span>
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" viewBox="0 0 22 22" fill="none" stroke="#888780" stroke-width="1.8"><path d="M11 2a7 7 0 017 7v3.5l1.5 2.5H2.5L4 12.5V9a7 7 0 017-7z"/><path d="M9 18a2 2 0 004 0"/></svg>
+      <span class="nav-label">Alertes</span>
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" viewBox="0 0 22 22" fill="none" stroke="#888780" stroke-width="1.8"><circle cx="11" cy="8" r="3"/><path d="M5 19c0-3.5 2.7-6 6-6s6 2.5 6 6"/></svg>
+      <span class="nav-label">Profil</span>
+    </div>
+  </div>
+</div>
+<script>
+  function toggleCheck(checkId, nameId) {
+    const check = document.getElementById(checkId);
+    const name = document.getElementById(nameId);
+    const isDone = check.classList.contains('done');
+    if (isDone) {
+      check.classList.remove('done');
+      check.innerHTML = '';
+      name.classList.remove('done');
+    } else {
+      check.classList.add('done');
+      check.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg>';
+      name.classList.add('done');
+    }
+  }
+</script>
+</body>
+</html>

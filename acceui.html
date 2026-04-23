@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartHome - Accueil</title>
+    <style>
+        /* Réinitialisation de base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #E5E7EB; /* Fond gris pour mettre en valeur le téléphone */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Conteneur simulant un écran mobile */
+        .mobile-app {
+            background-color: #F8F9F9;
+            width: 100%;
+            max-width: 400px;
+            height: 800px;
+            max-height: 100vh;
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Contenu défilant */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 80px; /* Espace pour la barre de navigation */
+        }
+
+        /* En-tête */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            margin-top: 10px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            color: #2C3E50;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: #7F8C8D;
+            margin-top: 4px;
+        }
+
+        .profile-icon {
+            font-size: 35px;
+            cursor: pointer;
+        }
+
+        /* Cartes de résumé */
+        .summary-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            gap: 15px;
+        }
+
+        .summary-card {
+            flex: 1;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .card-courses { background-color: #E8F6F3; }
+        .card-budget { background-color: #FEF9E7; }
+
+        .card-icon { font-size: 24px; margin-bottom: 10px; }
+        .card-title { font-size: 14px; font-weight: 600; color: #34495E; }
+        .card-value { font-size: 20px; font-weight: bold; color: #2C3E50; margin: 5px 0; }
+        .card-sub { font-size: 12px; color: #7F8C8D; }
+
+        /* Actions rapides */
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2C3E50;
+            margin-bottom: 15px;
+        }
+
+        .actions-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+        }
+
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .icon-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            margin-bottom: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            color: white;
+        }
+
+        .btn-add .icon-circle { background-color: #2ECC71; }
+        .btn-expense .icon-circle { background-color: #E74C3C; }
+        .btn-message .icon-circle { background-color: #3498DB; }
+
+        .action-text {
+            font-size: 13px;
+            font-weight: 500;
+            color: #34495E;
+        }
+
+        /* Liste des besoins récents */
+        .recent-list {
+            background-color: white;
+            border-radius: 15px;
+            padding: 10px 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #ECF0F1;
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-icon { font-size: 24px; margin-right: 15px; }
+        
+        .item-text { flex: 1; }
+        .item-title { font-size: 15px; font-weight: 500; color: #2C3E50; }
+        .item-author { font-size: 12px; color: #95A5A6; margin-top: 3px; }
+
+        .check-btn {
+            background: none;
+            border: 2px solid #BDC3C7;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* Barre de navigation bas */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background-color: white;
+            border-top: 1px solid #ECF0F1;
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0 20px 0;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #7F8C8D;
+            text-decoration: none;
+            font-size: 12px;
+        }
+
+        .nav-item.active {
+            color: #2C3E50;
+            font-weight: bold;
+        }
+
+        .nav-icon {
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mobile-app">
+        
+        <div class="content">
+            
+            <header class="header">
+                <div>
+                    <h1>Bonjour, Famille ! 👋</h1>
+                    <p>Bienvenue sur SmartHome</p>
+                </div>
+                <div class="profile-icon">👤</div>
+            </header>
+
+            <div class="summary-container">
+                <div class="summary-card card-courses">
+                    <div class="card-icon">🛒</div>
+                    <div class="card-title">Courses</div>
+                    <div class="card-value">12 articles</div>
+                    <div class="card-sub">En attente</div>
+                </div>
+                <div class="summary-card card-budget">
+                    <div class="card-icon">👛</div>
+                    <div class="card-title">Budget</div>
+                    <div class="card-value">450 €</div>
+                    <div class="card-sub">Restant ce mois</div>
+                </div>
+            </div>
+
+            <h2 class="section-title">Actions rapides</h2>
+            <div class="actions-container">
+                <button class="action-btn btn-add">
+                    <div class="icon-circle">➕</div>
+                    <span class="action-text">Ajouter</span>
+                </button>
+                <button class="action-btn btn-expense">
+                    <div class="icon-circle">🧾</div>
+                    <span class="action-text">Dépense</span>
+                </button>
+                <button class="action-btn btn-message">
+                    <div class="icon-circle">💬</div>
+                    <span class="action-text">Message</span>
+                </button>
+            </div>
+
+            <h2 class="section-title">Besoins récents</h2>
+            <div class="recent-list">
+                <div class="list-item">
+                    <div class="item-icon">🥛</div>
+                    <div class="item-text">
+                        <div class="item-title">Plus de lait demi-écrémé</div>
+                        <div class="item-author">Signalé par Léo (Il y a 1h)</div>
+                    </div>
+                    <button class="check-btn" aria-label="Marquer comme fait"></button>
+                </div>
+
+                <div class="list-item">
+                    <div class="item-icon">🧺</div>
+                    <div class="item-text">
+                        <div class="item-title">Lessive (Format familial)</div>
+                        <div class="item-author">Ajouté par Maman (Hier)</div>
+                    </div>
+                    <button class="check-btn" aria-label="Marquer comme fait"></button>
+                </div>
+
+                <div class="list-item">
+                    <div class="item-icon">✏️</div>
+                    <div class="item-text">
+                        <div class="item-title">Fournitures scolaires</div>
+                        <div class="item-author">Signalé par Emma (Hier)</div>
+                    </div>
+                    <button class="check-btn" aria-label="Marquer comme fait"></button>
+                </div>
+            </div>
+        </div>
+
+        <nav class="bottom-nav">
+            <a href="#" class="nav-item active">
+                <span class="nav-icon">🏠</span>
+                Accueil
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">📋</span>
+                Listes
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">💶</span>
+                Budget
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">⚙️</span>
+                Menu
+            </a>
+        </nav>
+
+    </div>
+
+</body>
+</html>
