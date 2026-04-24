@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SmartHome - Signaler Urgent</title>
+    <style>
+        :root {
+            --bg-app: #F8FAFC;
+            --blue-soft: #6A8EAE;
+            --blue-dark: #3E5C76;
+            --blue-border: #D9E4EC;
+            --text-dark: #2C3E50;
+            --text-muted: #788A9C;
+            --urgent-color: #E63946;
+            --urgent-bg: #FDECEC;
+            --white: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-app);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* En-tête basique pour le contexte */
+        .header {
+            padding: 20px 24px;
+            background-color: var(--white);
+            border-bottom: 1px solid var(--blue-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 { font-size: 20px; color: var(--text-dark); }
+
+        /* Fausse liste en arrière-plan */
+        .content {
+            padding: 20px;
+            flex: 1;
+        }
+
+        .product-item {
+            background-color: var(--white);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--blue-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            opacity: 0.5; /* Assombri pour mettre en valeur le menu */
+        }
+
+        .product-item.active {
+            opacity: 1;
+            border-color: var(--blue-soft);
+            box-shadow: 0 4px 12px rgba(106, 142, 174, 0.15);
+        }
+
+        /* Overlay sombre */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(44, 62, 80, 0.4);
+            z-index: 10;
+        }
+
+        /* Menu glissant (Bottom Sheet) */
+        .bottom-sheet {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            background-color: var(--white);
+            border-radius: 24px 24px 0 0;
+            padding: 24px;
+            z-index: 20;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .sheet-handle {
+            width: 40px;
+            height: 5px;
+            background-color: var(--blue-border);
+            border-radius: 3px;
+            margin: 0 auto 20px auto;
+        }
+
+        .product-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--blue-border);
+        }
+
+        .product-icon {
+            font-size: 28px;
+            background-color: var(--bg-app);
+            width: 56px; height: 56px;
+            display: flex; justify-content: center; align-items: center;
+            border-radius: 16px;
+        }
+
+        .product-details h2 { font-size: 18px; color: var(--text-dark); margin-bottom: 4px;}
+        .product-details p { font-size: 14px; color: var(--text-muted); }
+
+        /* Actions du menu */
+        .action-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: none;
+            background-color: var(--bg-app);
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-align: left;
+        }
+
+        .action-btn.urgent {
+            background-color: var(--urgent-bg);
+            color: var(--urgent-color);
+            border: 1px solid #FAD4D4;
+        }
+
+        .action-btn.urgent:active { background-color: #F8C4C4; }
+        
+        /* Message de confirmation (Toast) */
+        .toast {
+            position: absolute;
+            top: 20px; left: 20px; right: 20px;
+            background-color: var(--text-dark);
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 30;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            /* Visible pour la démonstration du cas d'utilisation */
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="toast">
+        <span>✅</span> Produit marqué comme urgent. La famille a été notifiée.
+    </div>
+
+    <div class="header">
+        <h1>Liste de courses</h1>
+        <button style="border:none; background:none; font-size:20px;">⋮</button>
+    </div>
+
+    <div class="content">
+        <div class="product-item active">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size: 24px;">🧻</span>
+                <span style="font-weight: 600; color: var(--text-dark);">Papier toilette</span>
+            </div>
+            <span style="color: var(--text-muted); font-size: 14px;">x1</span>
+        </div>
+        
+        <div class="product-item">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size: 24px;">🍎</span>
+                <span style="font-weight: 600; color: var(--text-dark);">Pommes</span>
+            </div>
+            <span style="color: var(--text-muted); font-size: 14px;">x6</span>
+        </div>
+    </div>
+
+    <div class="overlay"></div>
+
+    <div class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        
+        <div class="product-info">
+            <div class="product-icon">🧻</div>
+            <div class="product-details">
+                <h2>Papier toilette</h2>
+                <p>Quantité : 1 • Hygiène</p>
+            </div>
+        </div>
+
+        <div class="action-list">
+            <button class="action-btn">
+                <span>✅</span> Marquer comme acheté
+            </button>
+            
+            <button class="action-btn urgent">
+                <span>🚨</span> Signaler comme urgent
+            </button>
+
+            <button class="action-btn">
+                <span>🗑️</span> Supprimer le produit
+            </button>
+        </div>
+    </div>
+
+</body>
+</html>

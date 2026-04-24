@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SmartHome - Gestion Multi-Familles</title>
+    <style>
+        :root {
+            --bg-app: #F8FAFC;
+            --blue-soft: #6A8EAE;
+            --blue-dark: #3E5C76;
+            --blue-light: #F0F4F8;
+            --blue-border: #D9E4EC;
+            --text-dark: #2C3E50;
+            --text-muted: #788A9C;
+            --danger-color: #E63946;
+            --active-green: #2D6A4F;
+            --white: #FFFFFF;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-app); display: flex; flex-direction: column; height: 100vh; }
+
+        /* HEADER RESPECTÉ (Style consulter.html) */
+        header { 
+            background-color: var(--white); padding: 30px 24px 20px; 
+            border-bottom: 1px solid var(--blue-border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        header h1 { font-size: 24px; color: var(--text-dark); font-weight: 800; }
+        
+        .btn-invite-head {
+            background-color: var(--blue-dark); color: white; border: none;
+            padding: 10px 16px; border-radius: 12px; font-size: 14px; font-weight: 700;
+        }
+
+        .content { flex: 1; overflow-y: auto; padding: 24px; padding-bottom: 100px; }
+
+        /* SECTION : CHOIX DU FOYER (Horizontal ou List) */
+        .section-label { font-size: 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        
+        .foyer-selector-container { display: flex; gap: 12px; margin-bottom: 30px; overflow-x: auto; padding-bottom: 10px; }
+        
+        .foyer-pill {
+            background: var(--white); border: 1px solid var(--blue-border);
+            padding: 12px 20px; border-radius: 15px; display: flex; align-items: center; gap: 10px;
+            cursor: pointer; white-space: nowrap; transition: 0.3s;
+        }
+        .foyer-pill.active { border-color: var(--blue-dark); background: var(--blue-light); box-shadow: 0 4px 10px rgba(62, 92, 118, 0.1); }
+        .foyer-pill.active .foyer-name { color: var(--blue-dark); font-weight: 800; }
+        .foyer-name { font-size: 15px; color: var(--text-dark); font-weight: 600; }
+
+        /* LISTE DES MEMBRES (Les informations de la famille) */
+        .family-details-box { animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .member-card {
+            background-color: var(--white); padding: 16px; border-radius: 18px;
+            border: 1px solid var(--blue-border); display: flex; align-items: center; gap: 16px;
+            margin-bottom: 12px;
+        }
+        .avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--blue-light); display: flex; justify-content: center; align-items: center; font-size: 24px; }
+        .info { flex: 1; }
+        .name { font-size: 16px; font-weight: 700; color: var(--text-dark); }
+        .role { font-size: 13px; color: var(--text-muted); }
+
+        .btn-delete {
+            background: #FFF5F5; color: var(--danger-color); border: 1px solid #FFE5E5;
+            width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Nav Bas (Style consulter.html) */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); border-top: 1px solid var(--blue-border); display: flex; justify-content: space-around; padding: 12px; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-muted); font-size: 11px; text-decoration: none; }
+        .nav-item.active { color: var(--blue-dark); font-weight: 700; }
+        .nav-icon { font-size: 22px; margin-bottom: 4px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Famille</h1>
+        <button class="btn-invite-head">+ Inviter</button>
+    </header>
+
+    <main class="content">
+        
+        <p class="section-label">Mes Foyers</p>
+        <div class="foyer-selector-container">
+            <div class="foyer-pill active" id="pill-awa" onclick="switchFamily('awa')">
+                <span>🏠</span>
+                <span class="foyer-name">Maison Awa</span>
+            </div>
+            <div class="foyer-pill" id="pill-khadija" onclick="switchFamily('khadija')">
+                <span>🏡</span>
+                <span class="foyer-name">Maison Khadija</span>
+            </div>
+            <div class="foyer-pill" onclick="alert('Ajouter un foyer')">
+                <span>➕</span>
+            </div>
+        </div>
+
+        <p class="section-label" id="list-title">Membres (Maison Awa)</p>
+        <div id="family-content" class="family-details-box">
+            <div class="member-card">
+                <div class="avatar">👩</div>
+                <div class="info">
+                    <p class="name">Julie</p>
+                    <p class="role">Administrateur</p>
+                </div>
+            </div>
+            <div class="member-card">
+                <div class="avatar">👨</div>
+                <div class="info">
+                    <p class="name">Thomas</p>
+                    <p class="role">Parent</p>
+                </div>
+                <button class="btn-delete">🗑️</button>
+            </div>
+            <div class="member-card">
+                <div class="avatar">👦</div>
+                <div class="info">
+                    <p class="name">Léo</p>
+                    <p class="role">Enfant</p>
+                </div>
+                <button class="btn-delete">🗑️</button>
+            </div>
+        </div>
+
+    </main>
+
+    <nav class="bottom-nav">
+        <div class="nav-item">
+            <span class="nav-icon">📊</span>
+            Accueil
+        </div>
+        <div class="nav-item">
+            <span class="nav-icon">🛒</span>
+            Courses
+        </div>
+        <div class="nav-item active">
+            <span class="nav-icon">👨‍👩‍👧‍👦</span>
+            Famille
+        </div>
+    </nav>
+
+    <script>
+        function switchFamily(family) {
+            const content = document.getElementById('family-content');
+            const title = document.getElementById('list-title');
+            
+            // Gestion des onglets (pills)
+            document.querySelectorAll('.foyer-pill').forEach(p => p.classList.remove('active'));
+            
+            if(family === 'awa') {
+                document.getElementById('pill-awa').classList.add('active');
+                title.innerText = "Membres (Maison Awa)";
+                content.innerHTML = `
+                    <div class="member-card">
+                        <div class="avatar">👩</div>
+                        <div class="info"><p class="name">Julie</p><p class="role">Administrateur</p></div>
+                    </div>
+                    <div class="member-card">
+                        <div class="avatar">👨</div>
+                        <div class="info"><p class="name">Thomas</p><p class="role">Parent</p></div>
+                        <button class="btn-delete">🗑️</button>
+                    </div>
+                    <div class="member-card">
+                        <div class="avatar">👦</div>
+                        <div class="info"><p class="name">Léo</p><p class="role">Enfant</p></div>
+                        <button class="btn-delete">🗑️</button>
+                    </div>
+                `;
+            } else if(family === 'khadija') {
+                document.getElementById('pill-khadija').classList.add('active');
+                title.innerText = "Membres (Maison Khadija)";
+                content.innerHTML = `
+                    <div class="member-card">
+                        <div class="avatar">👩</div>
+                        <div class="info"><p class="name">Julie</p><p class="role">Administrateur</p></div>
+                    </div>
+                    <div class="member-card">
+                        <div class="avatar">🧕</div>
+                        <div class="info"><p class="name">Khadija</p><p class="role">Co-Admin</p></div>
+                        <button class="btn-delete">🗑️</button>
+                    </div>
+                    <div class="member-card">
+                        <div class="avatar">👧</div>
+                        <div class="info"><p class="name">Aminata</p><p class="role">Enfant</p></div>
+                        <button class="btn-delete">🗑️</button>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

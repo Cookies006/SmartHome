@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SmartHome - Liste des produits et Achat</title>
+    <style>
+        :root {
+            --bg-app: #F8FAFC;
+            --blue-soft: #6A8EAE;
+            --blue-dark: #3E5C76;
+            --blue-light: #F0F4F8;
+            --blue-border: #D9E4EC;
+            --text-dark: #2C3E50;
+            --text-muted: #788A9C;
+            --urgent-color: #E63946;
+            --urgent-bg: #FDECEC;
+            --white: #FFFFFF;
+            --success-color: #2D6A4F;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-app);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            padding-bottom: 70px;
+            overflow: hidden; /* Empêche le scroll global quand l'overlay est ouvert */
+        }
+
+        /* En-tête fixe */
+        header {
+            background-color: var(--white);
+            padding: 20px 24px 10px 24px;
+            border-bottom: 1px solid var(--blue-border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        header h1 { font-size: 24px; color: var(--text-dark); font-weight: 800; }
+        
+        .profile-btn {
+            background-color: var(--blue-light);
+            border: 1px solid var(--blue-border);
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 18px;
+        }
+
+        .tabs { display: flex; gap: 20px; }
+        .tab { padding-bottom: 10px; font-size: 15px; font-weight: 600; color: var(--text-muted); border-bottom: 3px solid transparent; cursor: pointer; }
+        .tab.active { color: var(--blue-dark); border-bottom-color: var(--blue-dark); }
+
+        .filters { display: flex; gap: 10px; padding: 16px 24px; overflow-x: auto; background-color: var(--bg-app); }
+        .filters::-webkit-scrollbar { display: none; }
+        .filter-chip { background-color: var(--white); border: 1px solid var(--blue-border); color: var(--text-dark); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+        .filter-chip.active { background-color: var(--blue-dark); color: var(--white); border-color: var(--blue-dark); }
+
+        /* Liste de produits */
+        .content { flex: 1; overflow-y: auto; padding: 0 20px 20px 20px; display: flex; flex-direction: column; gap: 12px; }
+        .product-card { background-color: var(--white); padding: 16px; border-radius: 16px; border: 1px solid var(--blue-border); display: flex; align-items: center; gap: 16px; box-shadow: 0 2px 8px rgba(106, 142, 174, 0.05); position: relative; cursor: pointer; transition: transform 0.1s; }
+        .product-card:active { transform: scale(0.98); }
+        .product-card.is-urgent { border-left: 5px solid var(--urgent-color); background-color: #FFFDFD; }
+        
+        .check-area { width: 26px; height: 26px; border: 2px solid var(--blue-border); border-radius: 8px; display: flex; justify-content: center; align-items: center; flex-shrink: 0; background-color: var(--bg-app); }
+        .product-main { flex: 1; pointer-events: none; /* Pour laisser le clic à la carte entière */ }
+        .product-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .product-name { font-size: 16px; font-weight: 700; color: var(--text-dark); }
+        .urgent-badge { font-size: 10px; background-color: var(--urgent-color); color: white; padding: 2px 6px; border-radius: 6px; font-weight: 800; text-transform: uppercase; }
+        .product-meta { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-muted); }
+        .category-icon { font-size: 14px; }
+        .quantity { font-weight: 700; color: var(--blue-dark); }
+        .options-btn { background: none; border: none; font-size: 20px; color: var(--text-muted); padding: 4px; cursor: pointer; z-index: 2; }
+
+        .fab { position: fixed; bottom: 90px; right: 24px; background-color: var(--blue-dark); color: white; width: 60px; height: 60px; border-radius: 18px; display: flex; justify-content: center; align-items: center; font-size: 30px; box-shadow: 0 8px 20px rgba(62, 92, 118, 0.3); border: none; cursor: pointer; z-index: 20; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--white); border-top: 1px solid var(--blue-border); display: flex; justify-content: space-around; padding: 12px 10px 15px 10px; padding-bottom: calc(15px + env(safe-area-inset-bottom)); z-index: 30; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-muted); text-decoration: none; font-size: 11px; width: 33%; }
+        .nav-item.active { color: var(--blue-dark); font-weight: 600; }
+        .nav-icon { font-size: 24px; margin-bottom: 4px; opacity: 0.7; }
+        .nav-item.active .nav-icon { opacity: 1; transform: scale(1.1); }
+
+        /* =========================================
+           VUE 2 : DÉTAILS DU PRODUIT (OVERLAY)
+           ========================================= */
+        .detail-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--bg-app);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            animation: slideIn 0.3s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .detail-header {
+            background-color: var(--white);
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--blue-border);
+        }
+
+        .back-btn { background: none; border: none; font-size: 24px; margin-right: 16px; cursor: pointer; color: var(--text-dark); }
+        
+        .detail-content { padding: 30px 24px; flex: 1; overflow-y: auto; text-align: center; }
+        
+        .product-icon-large { font-size: 64px; background-color: var(--white); width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; border-radius: 30px; margin: 0 auto 24px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--blue-border); }
+        .detail-title { font-size: 24px; font-weight: 800; color: var(--text-dark); margin-bottom: 24px; }
+
+        .info-card { background: var(--white); border-radius: 20px; padding: 20px; border: 1px solid var(--blue-border); text-align: left; }
+        .info-row { display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid var(--blue-light); }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: var(--text-muted); font-size: 14px; font-weight: 600; }
+        .info-val { color: var(--text-dark); font-size: 15px; font-weight: 700; }
+
+        /* Bouton d'action principal */
+        .action-area { padding: 24px; background: var(--white); border-top: 1px solid var(--blue-border); }
+        .btn-buy-action {
+            width: 100%;
+            background-color: var(--blue-dark);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(62, 92, 118, 0.2);
+        }
+
+        /* Toast Confirmation (Étape 12) */
+        .toast {
+            position: fixed;
+            bottom: 40px; left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--success-color);
+            color: white;
+            padding: 14px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            display: none;
+            z-index: 200;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-top">
+            <h1>Liste de courses</h1>
+            <button class="profile-btn">👨</button>
+        </div>
+        <div class="tabs">
+            <div class="tab active" id="tab-count">À acheter (4)</div>
+            <div class="tab">Historique</div>
+        </div>
+    </header>
+
+    <div class="filters">
+        <div class="filter-chip active">Tout</div>
+        <div class="filter-chip">🍎 Alimentation</div>
+        <div class="filter-chip">🧻 Hygiène</div>
+        <div class="filter-chip">🧹 Maison</div>
+    </div>
+
+    <main class="content">
+        <div class="product-card is-urgent" onclick="openProduct('Papier toilette', '1', '🧻 Hygiène', true, this)">
+            <div class="check-area"></div>
+            <div class="product-main">
+                <div class="product-title-row">
+                    <span class="product-name">Papier toilette</span>
+                    <span class="urgent-badge">Urgent</span>
+                </div>
+                <div class="product-meta">
+                    <span class="quantity">Qté: 1</span>
+                    <span>•</span>
+                    <span class="category-icon">🧻 Hygiène</span>
+                </div>
+            </div>
+            <button class="options-btn" onclick="event.stopPropagation()">⋮</button>
+        </div>
+
+        <div class="product-card" onclick="openProduct('Lait 1er âge', '2', '🍎 Alimentation', false, this)">
+            <div class="check-area"></div>
+            <div class="product-main">
+                <div class="product-title-row">
+                    <span class="product-name">Lait 1er âge</span>
+                </div>
+                <div class="product-meta">
+                    <span class="quantity">Qté: 2</span>
+                    <span>•</span>
+                    <span class="category-icon">🍎 Alimentation</span>
+                </div>
+            </div>
+            <button class="options-btn" onclick="event.stopPropagation()">⋮</button>
+        </div>
+
+        <div class="product-card" onclick="openProduct('Pommes Golden', '6', '🍎 Alimentation', false, this)">
+            <div class="check-area"></div>
+            <div class="product-main">
+                <div class="product-title-row">
+                    <span class="product-name">Pommes Golden</span>
+                </div>
+                <div class="product-meta">
+                    <span class="quantity">Qté: 6</span>
+                    <span>•</span>
+                    <span class="category-icon">🍎 Alimentation</span>
+                </div>
+            </div>
+            <button class="options-btn" onclick="event.stopPropagation()">⋮</button>
+        </div>
+    </main>
+
+    <button class="fab">+</button>
+
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item">
+            <span class="nav-icon">📊</span>
+            Accueil
+        </a>
+        <a href="#" class="nav-item active">
+            <span class="nav-icon">🛒</span>
+            Courses
+        </a>
+        <a href="#" class="nav-item">
+            <span class="nav-icon">👨‍👩‍👧‍👦</span>
+            Familles
+        </a>
+    </nav>
+
+    <div class="detail-overlay" id="productDetail">
+        <div class="detail-header">
+            <button class="back-btn" onclick="closeProduct()">←</button>
+            <h2 style="font-size: 18px; font-weight: 700;">Détails du produit</h2>
+        </div>
+
+        <div class="detail-content">
+            <div class="product-icon-large" id="detIcon">🛒</div>
+            <h2 class="detail-title" id="detTitle">Nom du produit</h2>
+            
+            <div class="info-card">
+                <div class="info-row">
+                    <span class="info-label">Quantité</span>
+                    <span class="info-val" id="detQty">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Catégorie</span>
+                    <span class="info-val" id="detCat">Catégorie</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Urgence</span>
+                    <span class="info-val" id="detUrg">Normale</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-area">
+            <button class="btn-buy-action" onclick="markAsBought()">
+                ✅ Marquer comme acheté
+            </button>
+        </div>
+    </div>
+
+    <div class="toast" id="successToast">✅ Produit acheté et ajouté à l'historique</div>
+
+    <script>
+        let currentCardElement = null; // Pour savoir quel produit a été sélectionné
+
+        // Fonction pour ouvrir la page détaillée d'un produit (Étape 6)
+        function openProduct(name, qty, category, isUrgent, element) {
+            currentCardElement = element;
+            
+            // Mise à jour des informations dans l'overlay
+            document.getElementById('detTitle').innerText = name;
+            document.getElementById('detQty').innerText = qty;
+            document.getElementById('detCat').innerText = category;
+            document.getElementById('detUrg').innerText = isUrgent ? "🚨 Urgent" : "Normale";
+            
+            // Déduction de l'icône
+            let icon = "🛒";
+            if(category.includes("🍎")) icon = "🍎";
+            if(category.includes("🧻")) icon = "🧻";
+            document.getElementById('detIcon').innerText = icon;
+
+            // Affichage de l'overlay
+            document.getElementById('productDetail').style.display = 'flex';
+        }
+
+        // Fonction pour fermer la page détaillée
+        function closeProduct() {
+            document.getElementById('productDetail').style.display = 'none';
+        }
+
+        // Fonction pour valider l'achat (Étapes 8 à 12)
+        function markAsBought() {
+            // 1. Fermer l'overlay
+            closeProduct();
+
+            // 2. Afficher le message de confirmation (Étape 12)
+            const toast = document.getElementById('successToast');
+            toast.style.display = 'block';
+
+            // 3. Simuler le déplacement vers l'historique (Étape 11) en retirant la carte
+            if(currentCardElement) {
+                currentCardElement.style.display = 'none';
+                
+                // Optionnel : Mettre à jour le compteur
+                document.getElementById('tab-count').innerText = "À acheter (3)";
+            }
+
+            // Faire disparaître le toast après 2.5 secondes
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 2500);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SmartHome - Consulter & Supprimer</title>
+    <style>
+        :root {
+            --bg-app: #F8FAFC;
+            --blue-soft: #6A8EAE;
+            --blue-dark: #3E5C76;
+            --blue-border: #D9E4EC;
+            --text-dark: #2C3E50;
+            --text-muted: #788A9C;
+            --danger-color: #E63946;
+            --white: #FFFFFF;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+
+        body { background-color: var(--bg-app); display: flex; flex-direction: column; height: 100vh; padding-bottom: 70px; }
+
+        /* En-tête et Filtres (Issus de "Consulter la liste") */
+        header { background-color: var(--white); padding: 20px 24px 10px 24px; border-bottom: 1px solid var(--blue-border); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        header h1 { font-size: 24px; color: var(--text-dark); font-weight: 800; }
+        .tabs { display: flex; gap: 20px; }
+        .tab { padding-bottom: 10px; font-size: 15px; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+        .tab.active { color: var(--blue-dark); border-bottom: 3px solid var(--blue-dark); }
+        .filters { display: flex; gap: 10px; padding: 16px 24px; overflow-x: auto; }
+        .filters::-webkit-scrollbar { display: none; }
+        .filter-chip { background-color: var(--white); border: 1px solid var(--blue-border); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+        .filter-chip.active { background-color: var(--blue-dark); color: var(--white); border-color: var(--blue-dark); }
+
+        /* Liste des produits */
+        .content { flex: 1; overflow-y: auto; padding: 0 20px 20px 20px; display: flex; flex-direction: column; gap: 12px; }
+        .product-card { background-color: var(--white); padding: 16px; border-radius: 16px; border: 1px solid var(--blue-border); display: flex; align-items: center; gap: 16px; position: relative; }
+        .check-area { width: 26px; height: 26px; border: 2px solid var(--blue-border); border-radius: 8px; }
+        .product-main { flex: 1; }
+        .product-name { font-size: 16px; font-weight: 700; color: var(--text-dark); display: block; margin-bottom: 4px; }
+        .product-meta { font-size: 13px; color: var(--text-muted); }
+        .options-btn { background: none; border: none; font-size: 20px; color: var(--text-muted); padding: 4px; cursor: pointer; }
+
+        /* Overlay sombre global */
+        .overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(44, 62, 80, 0.5); z-index: 20; }
+
+        /* Menu Options (Bottom Sheet) */
+        .bottom-sheet { display: none; position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--white); border-radius: 24px 24px 0 0; padding: 24px; z-index: 30; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .sheet-handle { width: 40px; height: 5px; background-color: var(--blue-border); border-radius: 3px; margin: 0 auto 20px auto; }
+        .action-btn { display: flex; align-items: center; gap: 16px; width: 100%; padding: 16px; border-radius: 12px; border: none; background-color: var(--bg-app); font-size: 16px; font-weight: 600; color: var(--text-dark); cursor: pointer; margin-bottom: 12px; }
+        .action-btn.delete { color: var(--danger-color); background-color: #FFF5F5; }
+
+        /* Boîte de confirmation de suppression */
+        .confirm-dialog { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 320px; background-color: var(--white); border-radius: 20px; padding: 24px; z-index: 40; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .warning-icon { font-size: 48px; margin-bottom: 16px; display: block; }
+        .confirm-dialog h2 { font-size: 18px; color: var(--text-dark); margin-bottom: 12px; }
+        .confirm-dialog p { font-size: 14px; color: var(--text-muted); line-height: 1.5; margin-bottom: 24px; }
+        .btn-delete-confirm { background-color: var(--danger-color); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 700; width: 100%; margin-bottom: 10px; cursor: pointer; }
+        .btn-cancel { background-color: var(--blue-light); color: var(--blue-dark); border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; width: 100%; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-top">
+            <h1>Liste de courses</h1>
+            <div style="width: 36px; height: 36px; background: var(--blue-light); border-radius: 50%; text-align: center; line-height: 36px;">👨</div>
+        </div>
+        <div class="tabs">
+            <div class="tab active">À acheter</div>
+            <div class="tab">Historique</div>
+        </div>
+    </header>
+
+    <div class="filters">
+        <div class="filter-chip active">Tout</div>
+        <div class="filter-chip">🍎 Alimentation</div>
+        <div class="filter-chip">🧻 Hygiène</div>
+        <div class="filter-chip">🧹 Maison</div>
+    </div>
+    </div>
+
+    <main class="content">
+        <div class="product-card">
+            <div class="check-area"></div>
+            <div class="product-main">
+                <span class="product-name">Pommes Golden</span>
+                <span class="product-meta">Qté: 6 • 🍎 Alimentation</span>
+            </div>
+            <button class="options-btn" onclick="openMenu()">⋮</button>
+        </div>
+        <div class="product-card">
+            <div class="check-area"></div>
+            <div class="product-main">
+                <span class="product-name">Lait demi-écrémé</span>
+                <span class="product-meta">Qté: 2 • 🍎 Alimentation</span>
+            </div>
+            <button class="options-btn" onclick="openMenu()">⋮</button>
+        </div>
+    </main>
+
+    <div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+    <div class="bottom-sheet" id="bottomSheet">
+        <div class="sheet-handle"></div>
+        <button class="action-btn"><span>🚨</span> Signaler comme urgent</button>
+        <button class="action-btn delete" onclick="openConfirm()"><span>🗑️</span> Supprimer le produit</button>
+    </div>
+
+    <div class="confirm-dialog" id="confirmDialog">
+        <span class="warning-icon">🗑️</span>
+        <h2>Supprimer ce produit ?</h2>
+        <p>Voulez-vous vraiment retirer ce produit de la liste ?</p>
+        <button class="btn-delete-confirm" onclick="closeAll()">Oui, supprimer</button>
+        <button class="btn-cancel" onclick="closeAll()">Annuler</button>
+    </div>
+
+    <script>
+        function openMenu() {
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('bottomSheet').style.display = 'block';
+        }
+
+        function openConfirm() {
+            document.getElementById('bottomSheet').style.display = 'none';
+            document.getElementById('confirmDialog').style.display = 'block';
+        }
+
+        function closeAll() {
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('bottomSheet').style.display = 'none';
+            document.getElementById('confirmDialog').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

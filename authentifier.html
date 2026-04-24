@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SmartHome - Authentification</title>
+    <style>
+        :root {
+            --bg-app: #FFFFFF;
+            --blue-soft: #6A8EAE;
+            --blue-dark: #3E5C76;
+            --blue-light: #F0F4F8;
+            --blue-border: #D9E4EC;
+            --text-dark: #2C3E50;
+            --text-muted: #788A9C;
+            --primary-color: #2A9D8F;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-app);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 24px;
+        }
+
+        /* Conteneur principal centré verticalement */
+        .auth-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-width: 400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* En-tête / Logo */
+        .hero {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            display: inline-block;
+            background-color: var(--blue-light);
+            width: 88px;
+            height: 88px;
+            line-height: 88px;
+            border-radius: 24px;
+            border: 1px solid var(--blue-border);
+        }
+
+        .hero h1 {
+            font-size: 26px;
+            color: var(--text-dark);
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .hero p {
+            font-size: 15px;
+            color: var(--text-muted);
+        }
+
+        /* Formulaire */
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-group label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            font-size: 18px;
+            color: var(--text-muted);
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 14px 14px 14px 40px;
+            border: 1px solid var(--blue-border);
+            border-radius: 12px;
+            font-size: 15px;
+            background-color: var(--bg-app);
+            color: var(--text-dark);
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .input-wrapper input:focus {
+            border-color: var(--blue-soft);
+            box-shadow: 0 0 0 3px rgba(106, 142, 174, 0.1);
+            background-color: var(--blue-light);
+        }
+
+        .forgot-password {
+            align-self: flex-end;
+            font-size: 13px;
+            color: var(--blue-soft);
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: -10px;
+        }
+
+        /* Boutons */
+        .btn-primary {
+            background-color: var(--blue-dark);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 8px;
+        }
+
+        .btn-primary:active {
+            background-color: var(--text-dark);
+        }
+
+        /* Séparateur pour l'inscription */
+        .register-prompt {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .register-prompt a {
+            color: var(--blue-soft);
+            font-weight: 700;
+            text-decoration: none;
+            margin-left: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-wrapper">
+        
+        <div class="hero">
+            <div class="logo-icon">🏠</div>
+            <h1>SmartHome</h1>
+            <p>Accédez à votre espace familial</p>
+        </div>
+
+        <form class="auth-form" action="#" method="POST">
+            <div class="input-group">
+                <label for="identifiant">Identifiant</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="identifiant" placeholder="Ex: Léo_Martin" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="password">Mot de passe</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">🔒</span>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <a href="#" class="forgot-password">Mot de passe oublié ?</a>
+
+            <button type="submit" class="btn-primary">S'authentifier</button>
+        </form>
+
+        <div class="register-prompt">
+            Nouveau sur SmartHome ? <a href="#">Créer un compte</a>
+        </div>
+
+    </div>
+
+</body>
+</html>

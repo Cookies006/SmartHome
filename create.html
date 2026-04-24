@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SmartHome - Créer une famille</title>
+    <style>
+        :root {
+            --bg-app: #F8FAFC;
+            --blue-soft: #6A8EAE;
+            --blue-dark: #3E5C76;
+            --blue-light: #F0F4F8;
+            --blue-border: #D9E4EC;
+            --text-dark: #2C3E50;
+            --text-muted: #788A9C;
+            --danger-color: #E63946;
+            --white: #FFFFFF;
+            --success-color: #2D6A4F;
+        }
+
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-app);
+            display: flex; flex-direction: column;
+            height: 100vh;
+        }
+
+        /* En-tête simplifié pour un écran de création */
+        header { background-color: var(--bg-app); padding: 20px 24px; display: flex; align-items: center; }
+        .back-btn { background: none; border: none; font-size: 24px; color: var(--text-dark); cursor: pointer; margin-right: 16px; }
+        
+        .content { flex: 1; padding: 20px 24px; display: flex; flex-direction: column; }
+
+        .illustration {
+            font-size: 72px; text-align: center; margin: 20px 0;
+            background: var(--white); width: 120px; height: 120px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 35px; margin-left: auto; margin-right: auto;
+            box-shadow: 0 8px 20px rgba(106, 142, 174, 0.1); border: 1px solid var(--blue-border);
+        }
+
+        h1 { font-size: 26px; font-weight: 800; color: var(--text-dark); text-align: center; margin-bottom: 10px; }
+        p.subtitle { font-size: 15px; color: var(--text-muted); text-align: center; margin-bottom: 40px; line-height: 1.4; }
+
+        /* Formulaire */
+        .form-group { margin-bottom: 24px; }
+        .form-label { display: block; font-size: 14px; font-weight: 700; color: var(--text-dark); margin-bottom: 10px; }
+        .form-input { 
+            width: 100%; padding: 18px; border-radius: 16px; 
+            border: 1px solid var(--blue-border); font-size: 16px; 
+            background-color: var(--white); color: var(--text-dark);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: all 0.2s;
+        }
+        .form-input:focus { outline: none; border-color: var(--blue-dark); box-shadow: 0 0 0 4px var(--blue-light); }
+
+        .btn-submit { 
+            width: 100%; background-color: var(--blue-dark); color: white; 
+            border: none; padding: 18px; border-radius: 16px; 
+            font-size: 16px; font-weight: 700; cursor: pointer; margin-top: auto;
+            box-shadow: 0 4px 15px rgba(62, 92, 118, 0.2);
+        }
+
+        /* Vue Succès (Post-condition) */
+        .success-view {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--white); z-index: 100;
+            flex-direction: column; align-items: center; justify-content: center; padding: 24px;
+            animation: fadeIn 0.3s ease-out; text-align: center;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .success-icon { font-size: 80px; margin-bottom: 20px; }
+        .success-view h2 { font-size: 24px; color: var(--text-dark); margin-bottom: 12px; }
+        .success-view p { color: var(--text-muted); font-size: 15px; margin-bottom: 30px; line-height: 1.5; }
+
+        .code-box {
+            background-color: var(--blue-light); border: 2px dashed var(--blue-soft);
+            padding: 20px 40px; border-radius: 16px; font-size: 36px;
+            font-weight: 800; letter-spacing: 8px; color: var(--blue-dark);
+            margin-bottom: 40px;
+        }
+
+        .btn-continue {
+            width: 100%; background-color: var(--success-color); color: white; 
+            border: none; padding: 18px; border-radius: 16px; 
+            font-size: 16px; font-weight: 700; cursor: pointer;
+        }
+
+        /* Toast d'erreur */
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: var(--danger-color); color: white; padding: 14px 24px; border-radius: 30px; font-size: 14px; font-weight: 600; display: none; z-index: 200; box-shadow: 0 4px 12px rgba(0,0,0,0.2); white-space: nowrap; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <button class="back-btn">←</button>
+    </header>
+
+    <main class="content">
+        <div class="illustration">🏠</div>
+        <h1>Créer votre foyer</h1>
+        <p class="subtitle">Créez un espace partagé pour gérer vos courses avec les membres de votre famille.</p>
+
+        <div class="form-group">
+            <label class="form-label" for="familyName">Nom de la famille</label>
+            <input type="text" id="familyName" class="form-input" placeholder="Ex: Famille Dupont, Les Colocs...">
+        </div>
+
+        <button class="btn-submit" onclick="createFamily()">Créer et générer le code</button>
+    </main>
+
+    <div class="success-view" id="successScreen">
+        <div class="success-icon">✨</div>
+        <h2 id="welcomeTitle">Bienvenue, Famille Dupont !</h2>
+        <p>Votre foyer a été créé avec succès. Vous êtes maintenant l'administrateur. Partagez ce code pour inviter d'autres membres.</p>
+        
+        <div class="code-box">X7K9P2</div>
+
+        <button class="btn-continue" onclick="goToApp()">Accéder à ma liste</button>
+    </div>
+
+    <div class="toast" id="errorToast">⚠️ Le nom de la famille est requis.</div>
+
+    <script>
+        function createFamily() {
+            const nameInput = document.getElementById('familyName').value.trim();
+
+            // Gestion de l'alternative : Champ vide
+            if (!nameInput) {
+                const toast = document.getElementById('errorToast');
+                toast.style.display = 'block';
+                setTimeout(() => { toast.style.display = 'none'; }, 3000);
+                return;
+            }
+
+            // Scénario nominal : Succès
+            // 1. On personnalise le message de bienvenue
+            document.getElementById('welcomeTitle').innerText = `Foyer créé !`;
+            
+            // 2. On affiche l'écran de succès contenant le code d'invitation généré par le système
+            document.getElementById('successScreen').style.display = 'flex';
+        }
+
+        function goToApp() {
+            // Dans une vraie application, cela redirigerait vers la page "consulter.html"
+            alert("Redirection vers la liste de courses...");
+        }
+    </script>
+</body>
+</html>
