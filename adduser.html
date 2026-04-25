@@ -1,137 +1,312 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SmartHome - Gestion des Foyers</title>
+    <title>SmartHome - Tableau de bord</title>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
     <style>
         :root {
-            --bg-app: #F8FAFC;
-            --blue-soft: #6A8EAE;
-            --blue-dark: #3E5C76;
-            --blue-light: #F0F4F8;
-            --blue-border: #D9E4EC;
-            --text-dark: #2C3E50;
-            --text-muted: #788A9C;
-            --danger-color: #E63946;
-            --white: #FFFFFF;
+            --primary: #0369A1;
+            --primary-light: #E0F2FE;
+            --primary-dark: #003D82;
+            --secondary: #06B6D4;
+            --accent: #0EA5E9;
+            --danger: #DC2626;
+            --bg-main: #F8FAFC;
+            --bg-card: #FFFFFF;
+            --bg-card-hover: #F1F5F9;
+            --text-primary: #0F172A;
+            --text-secondary: #475569;
+            --border-color: #E2E8F0;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.12);
+            --glow: 0 0 20px rgba(3, 105, 161, 0.15);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent;}
-        body { background-color: var(--bg-app); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-
-        /* HEADER STANDARD */
-        header {
-            background-color: var(--white);
-            padding: 25px 24px 20px;
-            border-bottom: 1px solid var(--blue-border);
-            display: flex; align-items: center; justify-content: space-between;
-            min-height: 80px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
-        header h1 { font-size: 22px; color: var(--text-dark); font-weight: 800; }
-        .back-btn { display: none; background: none; border: none; font-size: 24px; margin-right: 15px; cursor: pointer; color: var(--text-dark); }
-        .btn-invite { display: none; background-color: var(--blue-dark); color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 14px; font-weight: 700; }
 
-        .main-content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 100px; position: relative; }
+        html,
+        body {
+            height: 100%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
 
-        /* ================= ÉTAPE 1 : LISTE DES MAISONS ================= */
-        .home-card {
-            background: var(--white);
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            color: var(--text-primary);
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px 24px;
+            scroll-behavior: smooth;
+        }
+
+        /* Scrollbar styling */
+        .content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .content::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .content::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Header */
+        #app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            gap: 12px;
+        }
+
+        #app-header h1 {
+            flex: 1;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 8px;
+            display: none;
+            transition: color 0.3s ease;
+        }
+
+        .back-btn:hover {
+            color: var(--primary);
+        }
+
+        .btn-invite {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: none;
+            transition: background 0.3s ease;
+        }
+
+        .btn-invite:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
             padding: 20px;
-            border-radius: 20px;
-            border: 1px solid var(--blue-border);
-            margin-bottom: 16px;
+        }
+
+        #view-details {
+            display: none;
+        }
+
+        /* Home Cards */
+        .home-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 16px;
             cursor: pointer;
-            transition: transform 0.2s;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
         }
-        .home-card:active { transform: scale(0.98); background: var(--blue-light); }
-        .home-icon { font-size: 30px; background: var(--blue-light); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 15px; }
-        .home-info h3 { font-size: 18px; color: var(--text-dark); margin-bottom: 4px; }
-        .home-info p { font-size: 13px; color: var(--text-muted); }
 
-        /* ================= ÉTAPE 2 : DÉTAILS DE LA FAMILLE ================= */
-        #view-details { display: none; animation: fadeIn 0.3s ease; }
-        
+        .home-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+            border-color: var(--primary);
+        }
+
+        .home-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .home-info {
+            flex: 1;
+        }
+
+        .home-info h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .home-info p {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Member Cards */
         .member-card {
-            background-color: var(--white); padding: 16px; border-radius: 16px;
-            border: 1px solid var(--blue-border); display: flex; align-items: center; gap: 16px; 
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px;
             margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
         }
-        .member-avatar { width: 44px; height: 44px; border-radius: 50%; background-color: var(--blue-light); display: flex; justify-content: center; align-items: center; font-size: 20px; }
-        .member-info-text { flex: 1; }
-        .member-name { font-size: 15px; font-weight: 700; color: var(--text-dark); }
-        .member-role { font-size: 12px; color: var(--text-muted); }
 
-        /* BOTTOM NAV */
+        .member-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .member-avatar {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .member-info-text {
+            flex: 1;
+        }
+
+        .member-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .member-role {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Bottom Navigation */
         .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background-color: var(--white); border-top: 1px solid var(--blue-border);
-            display: flex; justify-content: space-around; padding: 12px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 12px 0;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+            position: sticky;
+            bottom: 0;
         }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-muted); text-decoration: none; font-size: 11px; }
-        .nav-item.active { color: var(--blue-dark); font-weight: 700; }
-        .nav-icon { font-size: 22px; margin-bottom: 4px; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px 12px;
+            transition: color 0.3s ease;
+        }
+
+        .nav-item:hover {
+            color: var(--primary);
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            font-size: 20px;
+        }
     </style>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+    </style>
+    <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
+    <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+    <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
 </head>
+
 <body>
-
-    <header id="app-header">
-        <button class="back-btn" id="backBtn" onclick="goBackToList()">←</button>
-        <h1 id="headerTitle">Familles</h1>
-        <button class="btn-invite" id="inviteBtn">+ Inviter</button>
+    <header id="app-header"><button class="back-btn" id="backBtn" onclick="goBackToList()">←</button>
+        <h1 id="headerTitle">Familles</h1><button class="btn-invite" id="inviteBtn">+ Inviter</button>
     </header>
-
     <main class="main-content">
-        
         <div id="view-list">
-            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Sélectionnez un foyer pour gérer ses membres.</p>
-            
+            <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 20px;">Sélectionnez un foyer pour
+                gérer ses membres.</p>
             <div class="home-card" onclick="openFamily('Maison Awa')">
-                <div class="home-icon">🏠</div>
+                <div class="home-icon">
+                    🏠
+                </div>
                 <div class="home-info">
                     <h3>Maison Awa</h3>
                     <p>2 membres • Administrateur</p>
                 </div>
             </div>
-
             <div class="home-card" onclick="openFamily('Maison Khadija')">
-                <div class="home-icon">🏡</div>
+                <div class="home-icon">
+                    🏡
+                </div>
                 <div class="home-info">
                     <h3>Maison Khadija</h3>
                     <p>3 membres • Parent</p>
                 </div>
             </div>
-
-            <div class="home-card" style="border-style: dashed; background: transparent; justify-content: center;" onclick="alert('Créer un nouveau foyer')">
-                <p style="color: var(--blue-dark); font-weight: 700;">+ Créer un nouveau foyer</p>
+            <div class="home-card" style="border-style: dashed; background: transparent; justify-content: center;"
+                onclick="alert('Créer un nouveau foyer')">
+                <p style="color: var(--primary); font-weight: 700;">+ Créer un nouveau foyer</p>
             </div>
         </div>
-
         <div id="view-details">
-            <div id="members-list">
-                </div>
+            <div id="members-list"></div>
         </div>
-
     </main>
-
     <nav class="bottom-nav">
-        <div class="nav-item">
-            <span class="nav-icon">📊</span> Accueil
+        <div class="nav-item"><span class="nav-icon">📊</span> Accueil
         </div>
-        <div class="nav-item">
-            <span class="nav-icon">🛒</span> Courses
+        <div class="nav-item"><span class="nav-icon">🛒</span> Courses
         </div>
-        <div class="nav-item active">
-            <span class="nav-icon">👨‍👩‍👧‍👦</span> Familles
+        <div class="nav-item active"><span class="nav-icon">👨‍👩‍👧‍👦</span> Familles
         </div>
     </nav>
-
     <script>
         const headerTitle = document.getElementById('headerTitle');
         const backBtn = document.getElementById('backBtn');
@@ -140,22 +315,15 @@
         const viewDetails = document.getElementById('view-details');
         const membersList = document.getElementById('members-list');
 
-        // Fonction pour ouvrir une famille spécifique
         function openFamily(familyName) {
-            // 1. Mise à jour du Header
-            headerTitle.innerText = "Famille " + familyName.split(' ')[1]; // Affiche "Famille Awa"
+            headerTitle.innerText = "Famille " + familyName.split(' ')[1];
             backBtn.style.display = "block";
             inviteBtn.style.display = "block";
-
-            // 2. Bascule des vues dans le body
             viewList.style.display = "none";
             viewDetails.style.display = "block";
-
-            // 3. Chargement des membres (Simulation)
             loadMembers(familyName);
         }
 
-        // Retour à la liste globale
         function goBackToList() {
             headerTitle.innerText = "Familles";
             backBtn.style.display = "none";
@@ -165,40 +333,42 @@
         }
 
         function loadMembers(familyName) {
-            if(familyName.includes('Awa')) {
+            if (familyName.includes('Awa')) {
                 membersList.innerHTML = `
-                    <div class="member-card">
-                        <div class="member-avatar">👩</div>
-                        <div class="member-info-text">
-                            <p class="member-name">Julie (Vous)</p>
-                            <p class="member-role">Administrateur</p>
-                        </div>
-                    </div>
-                    <div class="member-card">
-                        <div class="member-avatar">👨</div>
-                        <div class="member-info-text">
-                            <p class="member-name">Thomas</p>
-                            <p class="member-role">Parent</p>
-                        </div>
-                    </div>
-                `;
+          <div class="member-card">
+            <div class="member-avatar">👩</div>
+            <div class="member-info-text">
+              <p class="member-name">Julie (Vous)</p>
+              <p class="member-role">Administrateur</p>
+            </div>
+          </div>
+          <div class="member-card">
+            <div class="member-avatar">👨</div>
+            <div class="member-info-text">
+              <p class="member-name">Thomas</p>
+              <p class="member-role">Parent</p>
+            </div>
+          </div>
+        `;
             } else {
                 membersList.innerHTML = `
-                    <div class="member-card">
-                        <div class="member-avatar">👩</div>
-                        <div class="member-info-text"><p class="member-name">Julie</p><p class="member-role">Membre</p></div>
-                    </div>
-                    <div class="member-card">
-                        <div class="member-avatar">🧕</div>
-                        <div class="member-info-text"><p class="member-name">Khadija</p><p class="member-role">Administrateur</p></div>
-                    </div>
-                    <div class="member-card">
-                        <div class="member-avatar">👧</div>
-                        <div class="member-info-text"><p class="member-name">Aminata</p><p class="member-role">Enfant</p></div>
-                    </div>
-                `;
+          <div class="member-card">
+            <div class="member-avatar">👩</div>
+            <div class="member-info-text"><p class="member-name">Julie</p><p class="member-role">Membre</p></div>
+          </div>
+          <div class="member-card">
+            <div class="member-avatar">🧕</div>
+            <div class="member-info-text"><p class="member-name">Khadija</p><p class="member-role">Administrateur</p></div>
+          </div>
+          <div class="member-card">
+            <div class="member-avatar">👧</div>
+            <div class="member-info-text"><p class="member-name">Aminata</p><p class="member-role">Enfant</p></div>
+          </div>
+        `;
             }
         }
     </script>
+    <script>(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'9f1dfa7792b72575',t:'MTc3NzEyNjcyMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();</script>
 </body>
+
 </html>

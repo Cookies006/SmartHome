@@ -1,350 +1,560 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SmartHome - Tableau de bord</title>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
     <style>
         :root {
-            --bg-app: #FFFFFF;
-            --blue-soft: #6A8EAE;
-            --blue-light: #F0F4F8;
-            --blue-border: #D9E4EC;
-            --text-dark: #2C3E50;
-            --text-muted: #788A9C;
-            --urgent-color: #E63946;
-            --urgent-bg: #FDECEC;
-            --success-color: #2A9D8F;
+            --primary: #0369A1;
+            --primary-light: #E0F2FE;
+            --primary-dark: #003D82;
+            --secondary: #06B6D4;
+            --accent: #0EA5E9;
+            --danger: #DC2626;
+            --bg-main: #F8FAFC;
+            --bg-card: #FFFFFF;
+            --bg-card-hover: #F1F5F9;
+            --text-primary: #0F172A;
+            --text-secondary: #475569;
+            --border-color: #E2E8F0;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.12);
+            --glow: 0 0 20px rgba(3, 105, 161, 0.15);
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
+        html,
         body {
-            background-color: var(--bg-app);
+            height: 100%;
+            width: 100%;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
             display: flex;
             flex-direction: column;
-            height: 100vh; 
-            height: 100dvh; 
-            overflow: hidden; 
+            overflow: hidden;
+            color: var(--text-primary);
         }
 
         .content {
             flex: 1;
             overflow-y: auto;
-            padding: 24px 20px;
+            padding: 28px 24px;
+            scroll-behavior: smooth;
         }
 
-        /* En-tête avec switch de famille (Cas : Gérer les familles) */
+        /* Header avec gradient */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
+            margin-bottom: 32px;
+            animation: slideDown 0.6s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .header-left {
             display: flex;
             flex-direction: column;
+            gap: 8px;
         }
 
-        .header h1 { 
-            font-size: 22px; 
-            color: var(--text-dark); 
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1 i {
+            width: 32px;
+            height: 32px;
+            color: var(--primary);
+        }
+
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%);
+            color: black;
+            font-size: 11px;
             font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            width: fit-content;
+        }
+
+        .family-selector {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .family-selector:hover {
+            color: var(--primary);
+        }
+
+        .profile-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            cursor: pointer;
+            font-size: 24px;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .profile-btn:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            margin-top: 32px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        /* Badge indiquant le rôle (Parent ou Membre) */
-        .role-badge {
-            background-color: var(--blue-dark);
-            color: var(--blue-soft);
-            background: #E8EEF2;
-            font-size: 10px;
-            padding: 3px 8px;
-            border-radius: 8px;
-            text-transform: uppercase;
-            font-weight: 700;
+        .section-title i {
+            width: 24px;
+            height: 24px;
+            color: var(--primary);
         }
 
-        .family-selector {
-            font-size: 14px;
-            color: var(--blue-soft);
-            margin-top: 4px;
+        .action-link {
+            font-size: 13px;
+            color: var(--primary);
+            text-decoration: none;
             font-weight: 600;
+            transition: opacity 0.3s ease;
             display: flex;
             align-items: center;
             gap: 4px;
-            cursor: pointer;
         }
 
-        .profile-btn {
-            background-color: var(--blue-light);
-            border: 1px solid var(--blue-border);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 20px;
+        .action-link:hover {
+            opacity: 0.8;
         }
 
-        /* En-tête de section partagé */
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            margin-top: 25px;
-        }
-
-        .section-title { font-size: 17px; font-weight: 700; color: var(--text-dark); }
-        .action-link { font-size: 13px; color: var(--blue-soft); text-decoration: none; font-weight: 600; }
-
-        /* Carte Résumé des Courses (Cas : Consulter liste produits) */
+        /* Summary Card with gradient */
         .summary-card {
-            background-color: var(--blue-light);
-            border: 1px solid var(--blue-border);
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border: 1px solid rgba(139, 92, 246, 0.3);
             border-radius: 16px;
-            padding: 16px;
+            padding: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: var(--shadow), var(--glow);
+            transition: all 0.3s ease;
+            animation: fadeIn 0.6s ease-out 0.2s both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .summary-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+            border-color: var(--primary-light);
         }
 
         .summary-info h3 {
-            font-size: 18px;
-            color: var(--text-dark);
-            margin-bottom: 4px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 6px;
         }
 
         .summary-info p {
             font-size: 13px;
-            color: var(--text-muted);
+            color: var(--text-secondary);
+            font-weight: 500;
         }
 
         .summary-urgent {
-            background-color: var(--urgent-bg);
-            color: var(--urgent-color);
-            padding: 8px 12px;
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+            color: #FCA5A5;
+            padding: 10px 14px;
             border-radius: 12px;
             font-size: 13px;
             font-weight: 700;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 6px;
+            border: 1px solid rgba(220, 38, 38, 0.3);
         }
 
-        /* Membres actifs (Pont vers le cas : Gérer les membres) */
-        .active-members {
-            display: flex;
-            gap: 15px;
-            overflow-x: auto;
-            padding-bottom: 5px;
+        .summary-urgent i {
+            width: 16px;
+            height: 16px;
         }
 
-        .active-members::-webkit-scrollbar { display: none; }
-
-        .member {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        /* Device Grid */
+        .device-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 16px;
+            animation: fadeIn 0.6s ease-out 0.3s both;
         }
 
-        .member-avatar {
-            width: 50px;
-            height: 50px;
-            background-color: var(--blue-light);
-            border: 2px solid var(--blue-border);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 22px;
-            margin-bottom: 6px;
-        }
-
-        .member-name { font-size: 12px; font-weight: 500; color: var(--text-dark); }
-
-        /* Activité récente (Reflet des actions du diagramme) */
-        .recent-list {
-            background-color: var(--bg-app);
+        .device-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
             border-radius: 16px;
-            border: 1px solid var(--blue-border);
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
-
-        .list-item {
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
             display: flex;
+            flex-direction: column;
+            gap: 12px;
             align-items: center;
-            padding: 14px;
-            border-bottom: 1px solid var(--blue-light);
         }
-        .list-item:last-child { border-bottom: none; }
 
-        .item-icon { 
-            font-size: 18px; 
-            margin-right: 12px;
-            background-color: var(--blue-light);
-            width: 38px;
-            height: 38px;
+        .device-card:hover {
+            box-shadow: var(--shadow-lg), var(--glow);
+            transform: translateY(-4px);
+            border-color: #8B5CF6;
+            background: var(--bg-card-hover);
+        }
+
+        .device-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%);
+            border-radius: 12px;
             display: flex;
             justify-content: center;
             align-items: center;
-            border-radius: 10px;
+            color: #C4B5FD;
+            font-size: 24px;
+            border: 1px solid rgba(139, 92, 246, 0.2);
         }
 
-        .list-item.is-urgent .item-icon { background-color: var(--urgent-bg); }
-        .list-item.is-bought .item-icon { background-color: #E8F7F5; }
-        
-        .item-text { flex: 1; }
-        .item-title { font-size: 14px; font-weight: 600; color: var(--text-dark); }
-        
-        .badge-urgent {
-            background-color: var(--urgent-color);
+        .device-card.active .device-icon {
+            background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
             color: white;
-            font-size: 10px;
-            padding: 2px 6px;
+            border: none;
+        }
+
+        .device-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .device-status {
+            font-size: 11px;
+            padding: 4px 8px;
             border-radius: 8px;
-            margin-left: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            background: rgba(100, 116, 139, 0.3);
+            color: black;
         }
 
-        .item-action { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-        .item-action strong { color: var(--text-dark); font-weight: 600; }
-
-        /* Navigation du bas */
-        .bottom-nav {
-            flex-shrink: 0;
-            background-color: var(--bg-app);
-            border-top: 1px solid var(--blue-border);
-            display: flex;
-            justify-content: space-around;
-            padding: 12px 10px 15px 10px;
-            padding-bottom: calc(15px + env(safe-area-inset-bottom));
+        .device-card.active .device-status {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(52, 211, 153, 0.1) 100%);
+            color: #86EFAC;
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
-        .nav-item {
+        /* Activity List */
+        .activity-list {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 11px;
-            width: 33%; 
+            gap: 12px;
+            animation: fadeIn 0.6s ease-out 0.4s both;
         }
 
-        .nav-item.active { color: var(--blue-soft); font-weight: 600; }
-        .nav-icon { font-size: 24px; margin-bottom: 4px; opacity: 0.7; }
-        .nav-item.active .nav-icon { opacity: 1; transform: scale(1.1); }
+        .activity-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+        }
+
+        .activity-item:hover {
+            border-color: #8B5CF6;
+            background: var(--bg-card-hover);
+            box-shadow: var(--shadow-lg), 0 0 15px rgba(139, 92, 246, 0.2);
+        }
+
+        .activity-left {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex: 1;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #C4B5FD;
+            font-size: 20px;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .activity-content h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .activity-content p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .activity-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* Scrollbar styling */
+        .content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .content::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .content::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
     </style>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+    </style>
+    <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
+    <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+    <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
 </head>
+
 <body>
-
     <div class="content">
-        
-        <header class="header">
+        <!-- Header -->
+        <div class="header">
             <div class="header-left">
-                <h1>Famille Martin <span class="role-badge">Parent</span></h1>
+                <h1><i data-lucide="shopping-cart"></i> Liste de Courses</h1><span class="role-badge">👨‍👩‍👧‍👦
+                    Famille Gueye</span>
                 <div class="family-selector">
-                    Changer de famille ▾
+                    <i data-lucide="users" style="width: 14px; height: 14px;"></i> 4 membres
                 </div>
-            </div>
-            <button class="profile-btn">👤</button>
-        </header>
-
+            </div><button class="profile-btn">👤</button>
+        </div><!-- Summary Card -->
         <div class="summary-card">
             <div class="summary-info">
-                <h3>Liste de courses</h3>
-                <p>12 produits à acheter</p>
+                <h3>12 Articles</h3>
+                <p>À acheter cette semaine</p>
             </div>
             <div class="summary-urgent">
-                <span>🚨</span> 2 Urgents
+                <i data-lucide="alert-circle"></i> 3 Urgents
             </div>
-        </div>
-
+        </div><!-- Famille Members Section -->
         <div class="section-header">
-            <h2 class="section-title">Membres (4)</h2>
-            <a href="#" class="action-link">+ Inviter</a>
+            <div class="section-title">
+                <i data-lucide="users"></i> Membres de la Famille
+            </div><a href="#" class="action-link"> Inviter <i data-lucide="arrow-right"
+                    style="width: 14px; height: 14px;"></i> </a>
         </div>
-        <div class="active-members">
-            <div class="member">
-                <div class="member-avatar">👨</div>
-                <span class="member-name">Papa</span>
+        <div class="device-grid">
+            <div class="device-card">
+                <div class="device-icon">
+                    <i data-lucide="user"></i>
+                </div>
+                <div class="device-name">
+                    Papa
+                </div>
+                <div class="device-status">
+                    Actif
+                </div>
             </div>
-            <div class="member">
-                <div class="member-avatar">👩</div>
-                <span class="member-name">Maman</span>
+            <div class="device-card">
+                <div class="device-icon">
+                    <i data-lucide="user"></i>
+                </div>
+                <div class="device-name">
+                    Maman
+                </div>
+                <div class="device-status">
+                    Actif
+                </div>
             </div>
-            <div class="member">
-                <div class="member-avatar">👦</div>
-                <span class="member-name">Léo</span>
+            <div class="device-card">
+                <div class="device-icon">
+                    <i data-lucide="user"></i>
+                </div>
+                <div class="device-name">
+                    Diarra
+                </div>
+                <div class="device-status">
+                    Inactif
+                </div>
             </div>
-            <div class="member">
-                <div class="member-avatar">👧</div>
-                <span class="member-name">Mia</span>
+            <div class="device-card">
+                <div class="device-icon">
+                    <i data-lucide="user"></i>
+                </div>
+                <div class="device-name">
+                    Fallou
+                </div>
+                <div class="device-status">
+                    Actif
+                </div>
             </div>
-        </div>
-
+        </div><!-- Courses Added Section -->
         <div class="section-header">
-            <h2 class="section-title">Dernières actions</h2>
+            <div class="section-title">
+                <i data-lucide="list"></i> Articles Ajoutés
+            </div><a href="#" class="action-link"> Tout voir <i data-lucide="arrow-right"
+                    style="width: 14px; height: 14px;"></i> </a>
         </div>
-        
-        <div class="recent-list">
-            <div class="list-item is-urgent">
-                <div class="item-icon">🍼</div>
-                <div class="item-text">
-                    <div>
-                        <span class="item-title">Lait 1er âge</span>
-                        <span class="badge-urgent">Urgent</span>
+        <div class="activity-list">
+            <div class="activity-item">
+                <div class="activity-left">
+                    <div class="activity-icon">
+                        🍎
                     </div>
-                    <div class="item-action"><strong>Ajouté</strong> par Maman • 10 min</div>
+                    <div class="activity-content">
+                        <h4>Pommes</h4>
+                        <p>Ajouté par Maman</p>
+                    </div>
+                </div>
+                <div class="activity-time">
+                    Il y a 5 min
                 </div>
             </div>
-
-            <div class="list-item">
-                <div class="item-icon">🧻</div>
-                <div class="item-text">
-                    <div class="item-title">Papier toilette</div>
-                    <div class="item-action"><strong>Ajouté</strong> par Léo • 1h</div>
+            <div class="activity-item">
+                <div class="activity-left">
+                    <div class="activity-icon">
+                        🥛
+                    </div>
+                    <div class="activity-content">
+                        <h4>Lait en poudre</h4>
+                        <p>Urgent - Ajouté par Maman</p>
+                    </div>
+                </div>
+                <div class="activity-time">
+                    Il y a 10 min
                 </div>
             </div>
-
-            <div class="list-item is-bought">
-                <div class="item-icon">✅</div>
-                <div class="item-text">
-                    <div class="item-title" style="text-decoration: line-through; color: var(--text-muted);">Pommes</div>
-                    <div class="item-action"><strong>Acheté</strong> par Papa • 2h</div>
+            <div class="activity-item">
+                <div class="activity-left">
+                    <div class="activity-icon">
+                        🧻
+                    </div>
+                    <div class="activity-content">
+                        <h4>Papier toilette</h4>
+                        <p>Ajouté par Diarra</p>
+                    </div>
+                </div>
+                <div class="activity-time">
+                    Il y a 1h
+                </div>
+            </div>
+            <div class="activity-item">
+                <div class="activity-left">
+                    <div class="activity-icon">
+                        🍞
+                    </div>
+                    <div class="activity-content">
+                        <h4>Pain</h4>
+                        <p>Acheté par Fallou</p>
+                    </div>
+                </div>
+                <div class="activity-time">
+                    Il y a 2h
                 </div>
             </div>
         </div>
-
     </div>
-
-    <nav class="bottom-nav">
-        <a href="#" class="nav-item active">
-            <span class="nav-icon">📊</span>
-            Accueil
-        </a>
-        <a href="#" class="nav-item">
-            <span class="nav-icon">🛒</span>
-            Courses
-        </a>
-        <a href="#" class="nav-item">
-            <span class="nav-icon">👨‍👩‍👧‍👦</span>
-            Familles
-        </a>
-    </nav>
-
+    <script>
+        lucide.createIcons();
+    </script>
+    <script>(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'9f1dd83e13612575',t:'MTc3NzEyNTMxOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();</script>
 </body>
+
 </html>
-        
-       
