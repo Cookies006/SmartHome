@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 5000
 
-CMD ["gunicorn", "app:create_app()", "--bind", "0.0.0.0:5000", "--timeout", "120", "--workers", "1"]
+CMD ["gunicorn", "app:create_app()", "--bind", "0.0.0.0:5000", "--timeout", "120", "--workers", "1", "--worker-class", "gthread", "--threads", "2"]
