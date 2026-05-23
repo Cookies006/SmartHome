@@ -87,10 +87,10 @@ def create_app(config_name=None):
     
 
     with app.app_context():
-        try:
-            db.create_all()
-        except Exception as e:
-            print(f"⚠ DB init error: {e}")
+    print(f">>> FLASK_ENV: {os.getenv('FLASK_ENV')}")
+    print(f">>> DATABASE_URL: {os.getenv('DATABASE_URL', 'NON DEFINI')}")
+    print(f">>> DB URI: {app.config.get('SQLALCHEMY_DATABASE_URI')}")
+    # db.create_all() désactivé temporairement
     
     return app
 
