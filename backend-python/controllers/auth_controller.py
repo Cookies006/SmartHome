@@ -6,7 +6,7 @@ import os
 from models import db, User
 from middleware import ErrorResponse, token_required, get_current_user
 from validation import validate_user_data
-from app import envoyer_code_verification
+from email_utils import envoyer_code_verification
 
 # Auth Controller
 
