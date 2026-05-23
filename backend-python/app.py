@@ -59,7 +59,7 @@ def create_app(config_name=None):
     mail.init_app(app)
     
     # Setup CORS
-    cors_origins = app.config.get('CORS_ORIGINS', ['*'])
+    cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:8081,http://localhost:3000').split(',')
     CORS(app, resources={r"/api/*": {"origins": cors_origins}}, supports_credentials=True)
     
     # Register blueprints
