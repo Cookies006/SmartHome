@@ -10,7 +10,7 @@ class Config:
     JWT_ALGORITHM = 'HS256'
     
     # CORS - Support local development and production
-    CORS_ORIGINS = os.getenv('CORS_ORIGIN', 'http://localhost:8081,http://localhost:3000,https://smarthome-i3kj.onrender.com').split(',')
+    CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:8081,http://localhost:3000,https://smarthome-i3kj.onrender.com').split(',')
 
 class DevelopmentConfig(Config):
     """Configuration de développement - SQLite par défaut"""
@@ -24,11 +24,7 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     """Configuration de production - PostgreSQL"""
     DEBUG = False
-    # PostgreSQL Database pour la production
-    SQLALCHEMY_DATABASE_URI = (
-        f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@"
-        f"{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
-    )
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', '').replace('postgres://', 'postgresql://')
 
 class TestingConfig(Config):
     """Configuration de test"""
