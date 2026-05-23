@@ -85,8 +85,12 @@ def create_app(config_name=None):
     def health_check():
         return {'status': 'ok', 'message': 'SmartHome Backend API'}, 200
     
+
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+        except Exception as e:
+            print(f"⚠ DB init error: {e}")
     
     return app
 
