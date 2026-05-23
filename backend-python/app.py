@@ -71,9 +71,12 @@ def create_app(config_name=None):
     from routes.shopping_routes import shopping_bp
     
     
+    
+    print(">>> Registering blueprints")
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(family_bp, url_prefix='/api/families')
     app.register_blueprint(shopping_bp, url_prefix='/api/shopping')
+    print(">>> Done")
     
     
     # Error handlers
