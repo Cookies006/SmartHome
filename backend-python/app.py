@@ -63,13 +63,18 @@ def create_app(config_name=None):
     CORS(app, resources={r"/api/*": {"origins": cors_origins}}, supports_credentials=True)
     
     # Register blueprints
+    print(">>> Importing auth_bp")
     from routes.auth_routes import auth_bp
+    print(">>> Importing family_bp")
     from routes.family_routes import family_bp
+    print(">>> Importing shopping_bp")
     from routes.shopping_routes import shopping_bp
+    
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(family_bp, url_prefix='/api/families')
     app.register_blueprint(shopping_bp, url_prefix='/api/shopping')
+    
     
     # Error handlers
     @app.errorhandler(404)
