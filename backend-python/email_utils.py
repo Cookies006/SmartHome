@@ -11,7 +11,7 @@ api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
 
 def envoyer_code_verification(email_destinataire, code):
     try:
-        sender = {"name": "SmartHome", "email": "tonemail@gmail.com"}
+        sender = {"name": "SmartHome", "email": "amysene@esp.sn"}
 
         to = [{"email": email_destinataire}]
 
