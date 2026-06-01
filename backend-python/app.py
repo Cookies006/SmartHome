@@ -4,7 +4,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import config
 from models import db
-from flask_mail import Mail, Message
+from datetime import timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,6 +22,15 @@ def create_app(config_name=None):
     
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+
+    # =======================================================
+    # Empêche Render de changer la clé au redémarrage
+    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'une-cle-secrete-par-defaut-pour-le-local')
+    
+    # Applique votre expiration (168h par défaut)
+    jwt_expire_hours = int(os.getenv('JWT_EXPIRE_HOURS', 168))
+    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=jwt_expire_hours)
+    # =======================================================
     
     # Configuration Mail
     app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
