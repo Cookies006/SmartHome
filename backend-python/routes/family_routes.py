@@ -6,7 +6,7 @@ from controllers.family_controller import (
 
 family_bp = Blueprint('families', __name__)
 
-@family_bp.route('/', methods=['POST'])
+@family_bp.route('', methods=['POST'])
 @token_required
 def create_family_route():
     return create_family()
