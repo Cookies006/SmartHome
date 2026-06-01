@@ -6,6 +6,7 @@ from config import config
 from models import db
 from datetime import timedelta
 from dotenv import load_dotenv
+from flask_mail import Mail, Message
 
 load_dotenv()
 
