@@ -1,4 +1,4 @@
-import resend
+import sib-api-v3-sdk
 import os
 
 resend.api_key = os.getenv('RESEND_API_KEY')
