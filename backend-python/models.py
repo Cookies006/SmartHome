@@ -42,7 +42,11 @@ class Family(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(500))
     created_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    invite_code = db.Column(db.String(10), unique=True, nullable=False, index=True)
+    invite_code = db.Column(db.String(10), unique=True, nullable=True, index=True)
+    
+    # 🌟 NOUVEAU : La colonne d'expiration du code
+    code_expires_at = db.Column(db.DateTime, nullable=True)
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -58,6 +62,8 @@ class Family(db.Model):
             'description': self.description,
             'created_by_user_id': self.created_by_user_id,
             'invite_code': self.invite_code,
+            # 🌟 NOUVEAU : On l'ajoute au dictionnaire renvoyé à l'application
+            'code_expires_at': self.code_expires_at.isoformat() if self.code_expires_at else None,
             'created_at': self.created_at.isoformat(),
         }
 
