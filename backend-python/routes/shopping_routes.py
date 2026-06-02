@@ -9,7 +9,7 @@ from controllers.shopping_controller import (
 shopping_bp = Blueprint('shopping', __name__)
 
 # Shopping list routes
-@shopping_bp.route('/', methods=['POST'])
+@shopping_bp.route('', methods=['POST'])
 @token_required
 def create_shopping_list_route():
     return create_shopping_list()
