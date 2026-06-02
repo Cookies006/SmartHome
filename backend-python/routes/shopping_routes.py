@@ -35,17 +35,17 @@ def delete_shopping_list_route(list_id):
     return delete_shopping_list(list_id)
 
 # Shopping item routes
-@shopping_bp.route('/item', methods=['POST'])
+@shopping_bp.route('/items', methods=['POST'])
 @token_required
 def add_shopping_item_route():
     return add_shopping_item()
 
-@shopping_bp.route('/item/<int:item_id>', methods=['PUT'])
+@shopping_bp.route('/items/<int:item_id>', methods=['PUT'])
 @token_required
 def update_shopping_item_route(item_id):
     return update_shopping_item(item_id)
 
-@shopping_bp.route('/item/<int:item_id>', methods=['DELETE'])
+@shopping_bp.route('/items/<int:item_id>', methods=['DELETE'])
 @token_required
 def delete_shopping_item_route(item_id):
     return delete_shopping_item(item_id)
