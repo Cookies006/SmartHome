@@ -63,7 +63,7 @@ def register():
         
         return {
             'message': 'Code de vérification envoyé sur ' + email,
-        }, 200
+        }
     
     except Exception as e:
         return {'error': str(e)}, 500
@@ -110,9 +110,9 @@ def verify_code():
         # Supprimer le code utilisé
         del verification_codes[email]
         
-        # Générer token
+        # 🌟 CORRECTION ICI : identity=str(user.id) au lieu de user.id
         access_token = create_access_token(
-            identity=user.id,
+            identity=str(user.id),
             expires_delta=timedelta(hours=int(os.getenv('JWT_EXPIRE_HOURS', 168)))
         )
         
@@ -146,9 +146,9 @@ def login():
         if not bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
             return {'error': 'Invalid username or password'}, 401
         
-        # Generate token
+        # 🌟 CORRECTION ICI : identity=str(user.id) au lieu de user.id
         access_token = create_access_token(
-            identity=user.id,
+            identity=str(user.id),
             expires_delta=timedelta(hours=int(os.getenv('JWT_EXPIRE_HOURS', 168)))
         )
         
