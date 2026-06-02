@@ -15,7 +15,8 @@ def token_required(f):
                 return {'error': 'User not found'}, 401
             return f(*args, **kwargs)
         except Exception as e:
-            return {'error': 'Invalid or expired token'}, 401
+            # On demande au serveur de nous donner LA VRAIE raison :
+            return {'error': f'Erreur detaillee: {str(e)}'}, 401
     return decorated
 
 def get_current_user():
