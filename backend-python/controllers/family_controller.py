@@ -5,6 +5,7 @@ from models import db, Family, FamilyMember, User
 from middleware import get_current_user, ErrorResponse
 from validation import validate_family_data, validate_family_member_data, validate_role
 from activity_log import log_activity
+from datetime import datetime, timedelta
 
 # Family Controller
 
@@ -207,6 +208,11 @@ def join_family():
         family = Family.query.filter_by(invite_code=invite_code).first()
         if not family:
             return {'error': 'Invalid or expired invite code'}, 404
+            
+        # 🌟 Vérifier si le code a expiré (2h)
+        if hasattr(family, 'code_expires_at') and family.code_expires_at:
+            if datetime.utcnow() > family.code_expires_at:
+                return {'error': 'Invalid or expired invite code'}, 400
         
         # Check if user is already a member
         existing_member = FamilyMember.query.filter_by(
@@ -235,6 +241,39 @@ def join_family():
             'member': member.to_dict()
         }, 201
     
+    except Exception as e:
+        db.session.rollback()
+        return {'error': str(e)}, 500
+
+def generate_family_code(family_id):
+    """Générer un code d'invitation temporaire (2 heures)"""
+    try:
+        user = get_current_user()
+        if not user:
+            return {'error': 'Unauthorized'}, 401
+        
+        family = Family.query.get(family_id)
+        if not family:
+            return {'error': 'Family not found'}, 404
+            
+        # Générer un nouveau code plus facile à lire (6 caractères)
+        new_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        
+        # Définir l'expiration à maintenant + 2 heures
+        expiration_time = datetime.utcnow() + timedelta(hours=2)
+        
+        family.invite_code = new_code
+        family.code_expires_at = expiration_time
+        
+        db.session.commit()
+        
+        log_activity(family_id, user.id, 'GENERATE_CODE', f'Generated temporary invite code')
+        
+        return {
+            'message': 'Code généré avec succès',
+            'invite_code': new_code
+        }, 200
+        
     except Exception as e:
         db.session.rollback()
         return {'error': str(e)}, 500
