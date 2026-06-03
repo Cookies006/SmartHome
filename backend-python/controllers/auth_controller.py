@@ -13,6 +13,30 @@ from email_utils import envoyer_code_verification
 import random
 from datetime import datetime, timedelta
 
+from flask import request
+from models import db
+from middleware import get_current_user # (ou votre façon de récupérer l'utilisateur connecté)
+
+def save_push_token():
+    try:
+        user = get_current_user()
+        if not user:
+            return {'error': 'Non autorisé'}, 401
+            
+        data = request.get_json()
+        token = data.get('push_token')
+        
+        if token:
+            user.push_token = token
+            db.session.commit()
+            return {'message': 'Token sauvegardé avec succès !'}, 200
+        else:
+            return {'error': 'Aucun token fourni'}, 400
+            
+    except Exception as e:
+        db.session.rollback()
+        return {'error': str(e)}, 500
+
 # Dictionnaire temporaire pour stocker les codes
 verification_codes = {}
 
