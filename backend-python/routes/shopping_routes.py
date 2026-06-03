@@ -3,7 +3,7 @@ from middleware import token_required
 from controllers.shopping_controller import (
     create_shopping_list, get_shopping_list, get_family_shopping_lists,
     update_shopping_list, delete_shopping_list, add_shopping_item,
-    update_shopping_item, delete_shopping_item
+    update_shopping_item, delete_shopping_item, get_family_history
 )
 
 shopping_bp = Blueprint('shopping', __name__)
@@ -49,3 +49,8 @@ def update_shopping_item_route(item_id):
 @token_required
 def delete_shopping_item_route(item_id):
     return delete_shopping_item(item_id)
+
+@shopping_bp.route('/family/<int:family_id>/history', methods=['GET'])
+@token_required
+def get_family_history_route(family_id):
+    return get_family_history(family_id)
