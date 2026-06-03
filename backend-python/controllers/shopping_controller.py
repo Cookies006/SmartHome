@@ -67,12 +67,7 @@ def get_shopping_list(list_id):
             # Note: Si votre colonne s'appelle 'name' ou 'display_name' au lieu de 'username', changez-le ci-dessous
             item_data['added_by_name'] = creator.username if creator else "Inconnu"
             
-            # Récupère le nom de celui qui a acheté (si l'article est acheté)
-            if item.checked and hasattr(item, 'bought_by_user_id') and item.bought_by_user_id:
-                buyer = User.query.get(item.bought_by_user_id)
-                item_data['bought_by_name'] = buyer.username if buyer else "Inconnu"
-            elif item.checked: # Si on a pas stocké l'ID de l'acheteur mais qu'il est coché
-                item_data['bought_by_name'] = "Quelqu'un"
+            
                 
             items.append(item_data)
         
