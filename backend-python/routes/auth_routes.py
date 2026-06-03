@@ -1,6 +1,6 @@
 from flask import Blueprint
 from middleware import token_required
-from controllers.auth_controller import register, login, get_profile, update_profile, verify_code
+from controllers.auth_controller import register, login, get_profile, update_profile, verify_code, save_push_token
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -25,3 +25,8 @@ def get_profile_route():
 @token_required
 def update_profile_route():
     return update_profile()
+
+@auth_bp.route('/push-token', methods=['PUT'])
+@token_required
+def save_push_token_route():
+    return save_push_token()
