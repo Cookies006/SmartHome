@@ -266,3 +266,47 @@ def delete_shopping_item(item_id):
     except Exception as e:
         db.session.rollback()
         return {'error': str(e)}, 500
+
+# N'oubliez pas d'importer User en haut si ce n'est pas fait : 
+# from models import db, ShoppingList, ShoppingItem, Family, User
+
+def get_family_history(family_id):
+    """Récupérer l'historique de TOUS les achats de la famille"""
+    try:
+        user = get_current_user()
+        if not user:
+            return {'error': 'Unauthorized'}, 401
+        
+        # 1. Trouver toutes les listes de courses de cette famille
+        lists = ShoppingList.query.filter_by(family_id=family_id).all()
+        list_ids = [lst.id for lst in lists]
+        
+        if not list_ids:
+            return {'data': []}, 200
+            
+        # 2. Chercher TOUS les articles cochés de ces listes, peu importe qui les a achetés
+        history_items = ShoppingItem.query.filter(
+            ShoppingItem.shopping_list_id.in_(list_ids),
+            ShoppingItem.checked == True
+        ).order_by(ShoppingItem.bought_at.desc()).all()
+        
+        # 3. Préparer les données avec les noms
+        items_data = []
+        for item in history_items:
+            item_dict = item.to_dict()
+            
+            # Nom de l'acheteur (si vous avez la colonne bought_by_user_id)
+            if hasattr(item, 'bought_by_user_id') and item.bought_by_user_id:
+                buyer = User.query.get(item.bought_by_user_id)
+                # Remplacez .username par .name si votre base de données utilise 'name'
+                item_dict['bought_by_name'] = buyer.username if buyer else "Inconnu"
+            else:
+                item_dict['bought_by_name'] = "Quelqu'un"
+                
+            items_data.append(item_dict)
+            
+        # React Native attend un objet { data: [...] }
+        return {'data': items_data}, 200
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
