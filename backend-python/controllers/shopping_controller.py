@@ -1,6 +1,7 @@
 from flask import request
 from datetime import datetime
-from models import db, ShoppingList, ShoppingItem, Family
+# On ajoute 'User' à l'import !
+from models import db, ShoppingList, ShoppingItem, Family, User
 from middleware import get_current_user
 from validation import validate_shopping_list_data, validate_shopping_item_data
 from activity_log import log_activity
@@ -16,7 +17,6 @@ def create_shopping_list():
         
         data = request.get_json()
         
-        # Validate input
         errors = validate_shopping_list_data(data)
         if errors:
             return {'error': 'Validation failed', 'details': errors}, 400
@@ -24,12 +24,10 @@ def create_shopping_list():
         family_id = data['family_id']
         name = data['name']
         
-        # Check family exists
         family = Family.query.get(family_id)
         if not family:
             return {'error': 'Family not found'}, 404
         
-        # Create shopping list
         shopping_list = ShoppingList(
             family_id=family_id,
             name=name,
@@ -38,7 +36,6 @@ def create_shopping_list():
         db.session.add(shopping_list)
         db.session.commit()
         
-        # Log activity
         log_activity(family_id, user.id, 'CREATE_LIST', f'Created shopping list: {name}')
         
         return {
@@ -61,7 +58,23 @@ def get_shopping_list(list_id):
         if not shopping_list:
             return {'error': 'Shopping list not found'}, 404
         
-        items = [item.to_dict() for item in shopping_list.items]
+        items = []
+        for item in shopping_list.items:
+            item_data = item.to_dict()
+            
+            # Récupère le nom de celui qui a ajouté
+            creator = User.query.get(item.added_by_user_id) if item.added_by_user_id else None
+            # Note: Si votre colonne s'appelle 'name' ou 'display_name' au lieu de 'username', changez-le ci-dessous
+            item_data['added_by_name'] = creator.username if creator else "Inconnu"
+            
+            # Récupère le nom de celui qui a acheté (si l'article est acheté)
+            if item.checked and hasattr(item, 'bought_by_user_id') and item.bought_by_user_id:
+                buyer = User.query.get(item.bought_by_user_id)
+                item_data['bought_by_name'] = buyer.username if buyer else "Inconnu"
+            elif item.checked: # Si on a pas stocké l'ID de l'acheteur mais qu'il est coché
+                item_data['bought_by_name'] = "Quelqu'un"
+                
+            items.append(item_data)
         
         return {
             'list': shopping_list.to_dict(),
@@ -93,37 +106,29 @@ def get_family_shopping_lists(family_id):
         return {'error': str(e)}, 500
 
 def update_shopping_list(list_id):
-    """Mettre à jour une liste de courses"""
+    # ... (le code de cette fonction ne change pas) ...
     try:
         user = get_current_user()
         if not user:
             return {'error': 'Unauthorized'}, 401
         
         data = request.get_json()
-        
         shopping_list = ShoppingList.query.get(list_id)
         if not shopping_list:
             return {'error': 'Shopping list not found'}, 404
         
         if data.get('name'):
             shopping_list.name = data['name']
-        
         db.session.commit()
-        
-        # Log activity
         log_activity(shopping_list.family_id, user.id, 'UPDATE_LIST', f'Updated list: {shopping_list.name}')
         
-        return {
-            'message': 'Shopping list updated successfully',
-            'list': shopping_list.to_dict()
-        }, 200
-    
+        return {'message': 'Shopping list updated successfully', 'list': shopping_list.to_dict()}, 200
     except Exception as e:
         db.session.rollback()
         return {'error': str(e)}, 500
 
 def delete_shopping_list(list_id):
-    """Supprimer une liste de courses"""
+    # ... (le code de cette fonction ne change pas) ...
     try:
         user = get_current_user()
         if not user:
@@ -138,14 +143,8 @@ def delete_shopping_list(list_id):
         
         db.session.delete(shopping_list)
         db.session.commit()
-        
-        # Log activity
         log_activity(family_id, user.id, 'DELETE_LIST', f'Deleted list: {list_name}')
-        
-        return {
-            'message': 'Shopping list deleted successfully'
-        }, 200
-    
+        return {'message': 'Shopping list deleted successfully'}, 200
     except Exception as e:
         db.session.rollback()
         return {'error': str(e)}, 500
@@ -158,8 +157,6 @@ def add_shopping_item():
             return {'error': 'Unauthorized'}, 401
         
         data = request.get_json()
-        
-        # Validate input
         errors = validate_shopping_item_data(data)
         if errors:
             return {'error': 'Validation failed', 'details': errors}, 400
@@ -169,7 +166,6 @@ def add_shopping_item():
         if not shopping_list:
             return {'error': 'Shopping list not found'}, 404
         
-        # Create item
         item = ShoppingItem(
             shopping_list_id=list_id,
             name=data['name'],
@@ -182,12 +178,15 @@ def add_shopping_item():
         db.session.add(item)
         db.session.commit()
         
-        # Log activity
         log_activity(shopping_list.family_id, user.id, 'ADD_ITEM', f'Added item: {data["name"]}')
+        
+        # On injecte le nom du créateur pour la réponse immédiate !
+        item_data = item.to_dict()
+        item_data['added_by_name'] = user.username if hasattr(user, 'username') else getattr(user, 'name', 'Inconnu')
         
         return {
             'message': 'Shopping item added successfully',
-            'item': item.to_dict()
+            'item': item_data
         }, 201
     
     except Exception as e:
@@ -202,7 +201,6 @@ def update_shopping_item(item_id):
             return {'error': 'Unauthorized'}, 401
         
         data = request.get_json()
-        
         item = ShoppingItem.query.get(item_id)
         if not item:
             return {'error': 'Shopping item not found'}, 404
@@ -221,16 +219,26 @@ def update_shopping_item(item_id):
             item.checked = data['checked']
             if data['checked']:
                 item.bought_at = datetime.utcnow()
+                # On pourrait aussi enregistrer l'acheteur en base de données ici
+                # item.bought_by_user_id = user.id  <-- (Optionnel si vous avez cette colonne dans ShoppingItem)
         
         db.session.commit()
         
-        # Log activity
         shopping_list = ShoppingList.query.get(item.shopping_list_id)
         log_activity(shopping_list.family_id, user.id, 'UPDATE_ITEM', f'Updated item: {item.name}')
         
+        # On renvoie les noms dans la réponse
+        item_data = item.to_dict()
+        creator = User.query.get(item.added_by_user_id) if item.added_by_user_id else None
+        item_data['added_by_name'] = creator.username if creator else "Inconnu"
+        
+        # Si on le coche, on ajoute celui qui achète
+        if item.checked:
+            item_data['bought_by_name'] = user.username if hasattr(user, 'username') else getattr(user, 'name', 'Inconnu')
+        
         return {
             'message': 'Shopping item updated successfully',
-            'item': item.to_dict()
+            'item': item_data
         }, 200
     
     except Exception as e:
@@ -238,7 +246,7 @@ def update_shopping_item(item_id):
         return {'error': str(e)}, 500
 
 def delete_shopping_item(item_id):
-    """Supprimer un article"""
+    # ... (le code de cette fonction ne change pas) ...
     try:
         user = get_current_user()
         if not user:
@@ -253,14 +261,8 @@ def delete_shopping_item(item_id):
         
         db.session.delete(item)
         db.session.commit()
-        
-        # Log activity
         log_activity(shopping_list.family_id, user.id, 'DELETE_ITEM', f'Deleted item: {item_name}')
-        
-        return {
-            'message': 'Shopping item deleted successfully'
-        }, 200
-    
+        return {'message': 'Shopping item deleted successfully'}, 200
     except Exception as e:
         db.session.rollback()
         return {'error': str(e)}, 500
