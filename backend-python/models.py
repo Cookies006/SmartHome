@@ -17,6 +17,7 @@ class User(db.Model):
     active_family_id = db.Column(db.Integer, db.ForeignKey('families.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    push_token = db.Column(db.String(255), nullable=True)
     
     # Relationships
     family_members = db.relationship('FamilyMember', back_populates='user', cascade='all, delete-orphan')
