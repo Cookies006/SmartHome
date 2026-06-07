@@ -10,12 +10,12 @@ def token_required(f):
             verify_jwt_in_request()
             user_id = get_jwt_identity()
             from models import User
-            user = User.query.get(user_id)
+            # ✅ CORRECTION : cast en int car le JWT stocke un string
+            user = User.query.get(int(user_id))
             if not user:
                 return {'error': 'User not found'}, 401
             return f(*args, **kwargs)
         except Exception as e:
-            # On demande au serveur de nous donner LA VRAIE raison :
             return {'error': f'Erreur detaillee: {str(e)}'}, 401
     return decorated
 
@@ -25,7 +25,8 @@ def get_current_user():
         verify_jwt_in_request()
         user_id = get_jwt_identity()
         from models import User
-        return User.query.get(user_id)
+        # ✅ CORRECTION : cast en int car le JWT stocke un string
+        return User.query.get(int(user_id))
     except:
         return None
 
