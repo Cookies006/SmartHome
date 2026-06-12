@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useTheme } from './ThemeContext';
+import * as api from './api';
 
-// Couleurs light mode (par défaut)
 const LIGHT_COLORS = {
   bgApp: '#EBF2FA',
   surface: '#FFFFFF',
@@ -23,49 +25,113 @@ const LIGHT_COLORS = {
   dangerBg: '#FCE8E8',
 };
 
-
-
-export default function DashboardScreen({ initialFamilyName = 'Famille Faye', isNewFamily = false, onLogout, onNavigate }) {
+export default function DashboardScreen({ user, activeFamily, onFamilyChange, onLogout, onNavigate }) {
   const { theme, toggleTheme } = useTheme();
-  const COLORS = theme.colors;
-  const [familyName, setFamilyName] = useState(initialFamilyName);
-  const [articleCount, setArticleCount] = useState(12);
-  const [urgentCount, setUrgentCount] = useState(3);
-  const [members, setMembers] = useState([
-    { name: 'Papa' },
-    { name: 'Maman' },
-    { name: 'Fatou' },
-  ]);
-  const [activities, setActivities] = useState([
-    {
-      icon: '🍼',
-      title: 'Lait 1er âge',
-      subtitle: 'Ajouté par Maman • 10 min',
-      urgent: true,
-    },
-    {
-      icon: '🧻',
-      title: 'Papier toilette',
-      subtitle: 'Ajouté par Léo • 1h',
-      urgent: false,
-    },
-  ]);
+
+  const [familyName, setFamilyName] = useState('Mon foyer');
+  const [familyId, setFamilyId] = useState(null);
+  const [articleCount, setArticleCount] = useState(0);
+  const [urgentCount, setUrgentCount] = useState(0);
+  const [members, setMembers] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadDashboard = useCallback(async () => {
+    try {
+      let family = activeFamily;
+
+      if (!family) {
+        // Charger le profil pour trouver la famille
+        const profileResult = await api.getProfile();
+        if (!profileResult.success) return;
+        const { families } = profileResult.data;
+        if (!families || families.length === 0) {
+          setLoading(false);
+          return;
+        }
+        // families contient des FamilyMember — récupérer la vraie Family
+        const firstMember = families[0];
+        const famId = firstMember.family_id || firstMember.id;
+        const famResult = await api.getFamily(famId);
+        if (famResult.success) {
+          family = famResult.data.family;
+          onFamilyChange?.(family); // Sauvegarder dans App.js
+        } else {
+          setLoading(false);
+          return;
+        }
+      }
+
+      setFamilyId(family.id);
+      setFamilyName(family.name);
+
+      // Charger les membres
+      const familyResult = await api.getFamily(family.id);
+      if (familyResult.success) {
+        const membersList = familyResult.data.members || [];
+        setMembers(membersList.map(m => ({ name: m.member_name, role: m.role })));
+      }
+
+      // Charger les listes de courses
+      const shoppingResult = await api.getShoppingLists(family.id);
+      if (shoppingResult.success) {
+        const lists = shoppingResult.data.lists || [];
+        let total = 0;
+        let urgent = 0;
+        const recentActivities = [];
+
+        for (const list of lists) {
+          const listResult = await api.getShoppingList(list.id);
+          if (listResult.success) {
+            const items = listResult.data.items || [];
+            const unchecked = items.filter(i => !i.checked);
+            total += unchecked.length;
+            urgent += unchecked.filter(i => i.urgent).length;
+            unchecked.slice(0, 3).forEach(item => {
+              recentActivities.push({
+                icon: item.icon || '🛒',
+                title: item.name,
+                subtitle: `Liste: ${list.name}`,
+                urgent: item.urgent,
+              });
+            });
+          }
+        }
+
+        setArticleCount(total);
+        setUrgentCount(urgent);
+        setActivities(recentActivities.slice(0, 5));
+      }
+    } catch (e) {
+      console.error('Erreur chargement dashboard:', e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [activeFamily]);
 
   useEffect(() => {
-    if (isNewFamily) {
-      setFamilyName(initialFamilyName);
-      setArticleCount(0);
-      setUrgentCount(0);
-      setMembers([{ name: 'Vous' }]);
-      setActivities([]);
-    }
-  }, [isNewFamily, initialFamilyName]);
+    loadDashboard();
+  }, [activeFamily]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadDashboard();
+  };
 
   const handleNavigate = (screen) => {
-    if (onNavigate) {
-      onNavigate(screen);
-    }
+    if (onNavigate) onNavigate(screen);
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.outerContainer, { backgroundColor: theme.colors.bgGray, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={LIGHT_COLORS.primary} />
+        <Text style={{ marginTop: 16, color: LIGHT_COLORS.textMuted, fontWeight: '700' }}>Chargement...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.outerContainer, { backgroundColor: theme.colors.bgGray }]}>
@@ -73,7 +139,13 @@ export default function DashboardScreen({ initialFamilyName = 'Famille Faye', is
         <View style={styles.headerTop}>
           <View>
             <Text style={[styles.pageTitle, { color: theme.colors.textDark }]}>Tableau de bord</Text>
-            <Text style={[styles.badgeFamily, { backgroundColor: theme.isDark ? '#3A3A3A' : '#EAE0F8', color: theme.isDark ? '#B794F6' : '#9A73D5', borderColor: theme.isDark ? '#554444' : '#D8C5F5' }]}>👨‍👩‍👧‍👦 {familyName}</Text>
+            <Text style={[styles.badgeFamily, {
+              backgroundColor: theme.isDark ? '#3A3A3A' : '#EAE0F8',
+              color: theme.isDark ? '#B794F6' : '#9A73D5',
+              borderColor: theme.isDark ? '#554444' : '#D8C5F5'
+            }]}>
+              👨‍👩‍👧‍👦 {familyName}
+            </Text>
           </View>
           <View style={styles.headerButtons}>
             <TouchableOpacity style={styles.themeBtn} onPress={toggleTheme}>
@@ -85,18 +157,33 @@ export default function DashboardScreen({ initialFamilyName = 'Famille Faye', is
           </View>
         </View>
 
-        <ScrollView style={[styles.contentScroll, { backgroundColor: theme.colors.bgApp }]} showsVerticalScrollIndicator={false}>
-          <TouchableOpacity style={[styles.summaryCard, { backgroundColor: theme.colors.surfaceTint }]} onPress={() => handleNavigate('courses')}>
+        <ScrollView
+          style={[styles.contentScroll, { backgroundColor: theme.colors.bgApp }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          {/* Carte résumé */}
+          <TouchableOpacity
+            style={[styles.summaryCard, { backgroundColor: theme.colors.surfaceTint }]}
+            onPress={() => handleNavigate('courses')}
+          >
             <View>
-              <Text style={[styles.summaryTitle, { color: theme.colors.textDark }]}>{articleCount} Article{articleCount > 1 ? 's' : ''}</Text>
-              <Text style={[styles.summaryText, { color: theme.colors.textMuted }]}>À acheter cette semaine</Text>
+              <Text style={[styles.summaryTitle, { color: theme.colors.textDark }]}>
+                {articleCount} Article{articleCount > 1 ? 's' : ''}
+              </Text>
+              <Text style={[styles.summaryText, { color: theme.colors.textMuted }]}>
+                À acheter cette semaine
+              </Text>
             </View>
-            <View style={[styles.badgeUrgentLarge, { backgroundColor: theme.colors.dangerBg }]}> 
+            <View style={[styles.badgeUrgentLarge, { backgroundColor: theme.colors.dangerBg }]}>
               <Text style={styles.badgeUrgentIcon}>⏱️</Text>
-              <Text style={[styles.badgeUrgentText, { color: theme.colors.danger }]}>{urgentCount} Urgents</Text>
+              <Text style={[styles.badgeUrgentText, { color: theme.colors.danger }]}>
+                {urgentCount} Urgents
+              </Text>
             </View>
           </TouchableOpacity>
 
+          {/* Membres */}
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.colors.textDark }]}>Membres du foyer</Text>
             <TouchableOpacity onPress={() => handleNavigate('familles')}>
@@ -104,27 +191,45 @@ export default function DashboardScreen({ initialFamilyName = 'Famille Faye', is
             </TouchableOpacity>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.membersRow}>
-            {members.map((member) => (
-              <View key={member.name} style={[styles.memberCard, { backgroundColor: theme.colors.surface }] }>
-                <View style={[styles.memberAvatarSquare, { backgroundColor: theme.colors.accentPurpleBg }] }>
-                  <Text style={[styles.memberAvatarIcon, { color: theme.colors.accentPurpleText }]}>{'👤'}</Text>
+          {members.length === 0 ? (
+            <View style={[styles.emptyActivity, { marginBottom: 32 }]}>
+              <Text style={[styles.emptyActivityText, { color: theme.colors.textMuted }]}>
+                Aucun membre. Créez ou rejoignez un foyer !
+              </Text>
+              <TouchableOpacity
+                style={[styles.ctaBtn, { backgroundColor: theme.colors.primary }]}
+                onPress={() => handleNavigate('familles')}
+              >
+                <Text style={styles.ctaBtnText}>Créer un foyer</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.membersRow}>
+              {members.map((member, index) => (
+                <View key={index} style={[styles.memberCard, { backgroundColor: theme.colors.surface }]}>
+                  <View style={[styles.memberAvatarSquare, { backgroundColor: theme.colors.accentPurpleBg }]}>
+                    <Text style={[styles.memberAvatarIcon, { color: theme.colors.accentPurpleText }]}>👤</Text>
+                  </View>
+                  <Text style={[styles.memberName, { color: theme.colors.textDark }]}>{member.name}</Text>
+                  <Text style={[styles.memberRole, { color: theme.colors.textMuted }]}>{member.role}</Text>
                 </View>
-                <Text style={[styles.memberName, { color: theme.colors.textDark }]}>{member.name}</Text>
-              </View>
-            ))}
-          </ScrollView>
+              ))}
+            </ScrollView>
+          )}
 
+          {/* Activités récentes */}
           <Text style={[styles.recentTitle, { color: theme.colors.textDark }]}>Activité récente</Text>
-          <View style={[styles.actionList, { backgroundColor: theme.colors.surface }]}> 
+          <View style={[styles.actionList, { backgroundColor: theme.colors.surface }]}>
             {activities.length > 0 ? (
               activities.map((activity, index) => (
-                <View key={index} style={[styles.actionItem, { backgroundColor: theme.colors.bgApp }]}> 
+                <View key={index} style={[styles.actionItem, { backgroundColor: theme.colors.bgApp }]}>
                   <Text style={styles.activityIcon}>{activity.icon}</Text>
                   <View style={styles.actionTextContainer}>
-                    <Text style={[styles.actionTitle, { color: theme.colors.textDark }] }>
+                    <Text style={[styles.actionTitle, { color: theme.colors.textDark }]}>
                       {activity.title}{' '}
-                      {activity.urgent && <Text style={[styles.activityUrgent, { color: theme.colors.danger }]}>● Urgent</Text>}
+                      {activity.urgent && (
+                        <Text style={[styles.activityUrgent, { color: theme.colors.danger }]}>● Urgent</Text>
+                      )}
                     </Text>
                     <Text style={[styles.actionMeta, { color: theme.colors.textMuted }]}>{activity.subtitle}</Text>
                   </View>
@@ -132,14 +237,13 @@ export default function DashboardScreen({ initialFamilyName = 'Famille Faye', is
               ))
             ) : (
               <View style={styles.emptyActivity}>
-                <Text style={[styles.emptyActivityText, { color: theme.colors.textMuted }]}> 
+                <Text style={[styles.emptyActivityText, { color: theme.colors.textMuted }]}>
                   Aucune activité récente. Commencez par ajouter des articles !
                 </Text>
               </View>
             )}
           </View>
         </ScrollView>
-
       </View>
     </View>
   );
@@ -154,7 +258,6 @@ const styles = StyleSheet.create({
   appContainer: {
     flex: 1,
     backgroundColor: LIGHT_COLORS.bgApp,
-    paddingTop: 0,
     maxWidth: 430,
     width: '100%',
     alignSelf: 'center',
@@ -205,9 +308,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 5,
   },
-  themeBtnIcon: {
-    fontSize: 22,
-  },
+  themeBtnIcon: { fontSize: 22 },
   profileBtn: {
     backgroundColor: '#2C5282',
     width: 50,
@@ -221,14 +322,8 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 5,
   },
-  profileIcon: {
-    color: 'white',
-    fontSize: 22,
-  },
-  contentScroll: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
+  profileIcon: { color: 'white', fontSize: 22 },
+  contentScroll: { flex: 1, paddingHorizontal: 24 },
   summaryCard: {
     backgroundColor: LIGHT_COLORS.surfaceTint,
     borderRadius: 28,
@@ -253,7 +348,6 @@ const styles = StyleSheet.create({
   },
   badgeUrgentLarge: {
     backgroundColor: LIGHT_COLORS.dangerBg,
-    color: LIGHT_COLORS.danger,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 14,
@@ -262,10 +356,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(240,128,128,0.2)',
   },
-  badgeUrgentIcon: {
-    fontSize: 18,
-    marginBottom: 4,
-  },
+  badgeUrgentIcon: { fontSize: 18, marginBottom: 4 },
   badgeUrgentText: {
     color: LIGHT_COLORS.danger,
     fontSize: 14,
@@ -282,14 +373,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: LIGHT_COLORS.textDark,
   },
-  manageLink: {
-    color: '#007AFF',
-    fontWeight: '700',
-  },
-  membersRow: {
-    flexDirection: 'row',
-    marginBottom: 32,
-  },
+  manageLink: { color: '#007AFF', fontWeight: '700' },
+  membersRow: { flexDirection: 'row', marginBottom: 32 },
   memberCard: {
     backgroundColor: LIGHT_COLORS.surface,
     minWidth: 110,
@@ -314,14 +399,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 12,
   },
-  memberAvatarIcon: {
-    fontSize: 28,
-    color: LIGHT_COLORS.accentPurpleText,
-  },
+  memberAvatarIcon: { fontSize: 28, color: LIGHT_COLORS.accentPurpleText },
   memberName: {
     fontSize: 15,
     fontWeight: '800',
     color: LIGHT_COLORS.textDark,
+  },
+  memberRole: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: LIGHT_COLORS.textMuted,
+    marginTop: 2,
   },
   recentTitle: {
     fontSize: 16,
@@ -349,36 +437,36 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 8,
   },
-  activityIcon: {
-    fontSize: 22,
-    marginRight: 14,
-  },
-  actionTextContainer: {
-    flex: 1,
-  },
+  activityIcon: { fontSize: 22, marginRight: 14 },
+  actionTextContainer: { flex: 1 },
   actionTitle: {
     fontSize: 15,
     fontWeight: '800',
     color: LIGHT_COLORS.textDark,
     marginBottom: 2,
   },
-  activityUrgent: {
-    color: LIGHT_COLORS.danger,
-    fontSize: 12,
-  },
+  activityUrgent: { color: LIGHT_COLORS.danger, fontSize: 12 },
   actionMeta: {
     fontSize: 13,
     color: LIGHT_COLORS.textMuted,
     fontWeight: '600',
   },
-  emptyActivity: {
-    padding: 20,
-    alignItems: 'center',
-  },
+  emptyActivity: { padding: 20, alignItems: 'center' },
   emptyActivityText: {
     color: LIGHT_COLORS.textMuted,
     fontSize: 14,
     fontWeight: '700',
     textAlign: 'center',
+    marginBottom: 16,
+  },
+  ctaBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+  },
+  ctaBtnText: {
+    color: 'white',
+    fontWeight: '800',
+    fontSize: 14,
   },
 });

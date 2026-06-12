@@ -37,6 +37,7 @@ CREATE TABLE families (
   description TEXT,
   created_by_user_id INTEGER NOT NULL,
   invite_code VARCHAR(10) UNIQUE,
+  code_expires_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE CASCADE

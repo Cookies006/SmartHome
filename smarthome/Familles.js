@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput, StyleSheet, Alert, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { useTheme } from './ThemeContext';
+import * as api from './api';
+
+// 1. NOTRE PETITE MÉMOIRE GLOBALE ANTI-POISSON ROUGE
+let lastActiveFamilyId = null;
 
 const COLORS = {
   bgApp: '#EBF2FA',
@@ -160,7 +164,6 @@ const createStyles = (COLORS) => StyleSheet.create({
   },
   btnPrimary: {
     backgroundColor: COLORS.primary,
-    color: 'white',
     width: '100%',
     paddingVertical: 16,
     borderRadius: 20,
@@ -248,7 +251,6 @@ const createStyles = (COLORS) => StyleSheet.create({
     flex: 1,
     paddingVertical: 16,
     borderRadius: 20,
-    fontWeight: '800',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -259,13 +261,6 @@ const createStyles = (COLORS) => StyleSheet.create({
     color: COLORS.textMuted,
     fontWeight: '800',
   },
-  btnDanger: {
-    backgroundColor: COLORS.danger,
-  },
-  btnDangerText: {
-    color: 'white',
-    fontWeight: '800',
-  },
   btnPrimaryModal: {
     backgroundColor: COLORS.primary,
   },
@@ -273,9 +268,16 @@ const createStyles = (COLORS) => StyleSheet.create({
     color: 'white',
     fontWeight: '800',
   },
+  btnDanger: {
+    backgroundColor: COLORS.danger,
+  },
+  btnDangerText: {
+    color: 'white',
+    fontWeight: '800',
+  },
   toast: {
     position: 'absolute',
-    top: 30,
+    top: 60,
     left: 0,
     right: 0,
     alignItems: 'center',
@@ -284,129 +286,215 @@ const createStyles = (COLORS) => StyleSheet.create({
   toastContent: {
     backgroundColor: COLORS.textDark,
     paddingHorizontal: 24,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: 100,
     flexDirection: 'row',
+    gap: 8,
     alignItems: 'center',
-    gap: 10,
   },
   toastText: {
     color: 'white',
-    fontSize: 15,
     fontWeight: '700',
+    fontSize: 14,
   },
   inviteCodeContainer: {
-    backgroundColor: COLORS.surfaceTint,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderRadius: 14,
-    marginTop: 16,
+    alignItems: 'center',
+    marginTop: 8,
   },
   inviteCodeLabel: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: 12,
+    fontWeight: '700',
     color: COLORS.textMuted,
     textTransform: 'uppercase',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   inviteCode: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '900',
     color: COLORS.primary,
     letterSpacing: 4,
-    marginBottom: 4,
-    textAlign: 'center',
+    marginBottom: 8,
   },
   inviteCodeExpiry: {
     fontSize: 13,
-    fontWeight: '800',
-    color: COLORS.danger,
-    marginBottom: 16,
+    color: COLORS.textMuted,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  emptyState: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    color: COLORS.textMuted,
+    fontWeight: '700',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
 
-const familiesData = {
-  'faye': {
-    members: [
-      { id: 'm1', name: 'Papa (Vous)', role: 'Administrateur', roleClass: 'role-admin', bg: COLORS.accentPurpleBg, canDelete: false },
-      { id: 'm2', name: 'Maman', role: 'Membre', roleClass: '', bg: '#D1FAE5', canDelete: true },
-      { id: 'm3', name: 'Fatou', role: 'Enfant', roleClass: '', bg: '#FEE2E2', canDelete: true }
-    ]
-  },
-  'coloc': {
-    members: [
-      { id: 'c1', name: 'Toi (Vous)', role: 'Administrateur', roleClass: 'role-admin', bg: COLORS.accentPurpleBg, canDelete: false },
-      { id: 'c2', name: 'Marc', role: 'Enfant', roleClass: '', bg: '#FEF3C7', canDelete: true },
-      { id: 'c3', name: 'Sophie', role: 'Membre', roleClass: '', bg: '#E0F2FE', canDelete: true }
-    ]
-  },
-  'khadija': {
-    members: [
-      { id: 'k1', name: 'Khadija (Vous)', role: 'Administrateur', roleClass: 'role-admin', bg: COLORS.accentPurpleBg, canDelete: false },
-      { id: 'k2', name: 'Amina', role: 'Membre', roleClass: '', bg: '#D1FAE5', canDelete: true },
-      { id: 'k3', name: 'Youssef', role: 'Enfant', roleClass: '', bg: '#FEE2E2', canDelete: true }
-    ]
-  }
-};
-
-export default function FamillesScreen() {
+export default function FamillesScreen({ activeFamily, onFamilyChange }) {
   const { theme } = useTheme();
   const styles = createStyles(theme.colors);
-  const [selectedFamily, setSelectedFamily] = useState('faye');
-  const [members, setMembers] = useState(familiesData.faye.members);
+
+  const [families, setFamilies] = useState([]);
+  const [selectedFamily, setSelectedFamily] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [inviteCode, setInviteCode] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  // 🛡️ ÉTATS POUR LA GESTION DES ROLES ET SÉCURITÉ UI
+  const [isParent, setIsParent] = useState(false);
+  const [currentUserProfile, setCurrentUserProfile] = useState(null);
+  const [familyRoles, setFamilyRoles] = useState({});
+
   const [showFamilyOptions, setShowFamilyOptions] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastIcon, setToastIcon] = useState('✨');
   const [showAddFamilyModal, setShowAddFamilyModal] = useState(false);
   const [showJoinFamilyModal, setShowJoinFamilyModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState(null);
   const [newFamilyName, setNewFamilyName] = useState('');
   const [joinCode, setJoinCode] = useState('');
-  const [memberToDelete, setMemberToDelete] = useState(null);
-  const [inviteCode, setInviteCode] = useState(null);
-  const [families, setFamilies] = useState({
-    'faye': 'Famille Faye (Active)',
-    'coloc': 'Colocation Paris',
-    'khadija': 'Famille Khadija',
-  });
+  const [joinRole, setJoinRole] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastIcon, setToastIcon] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
-  const notify = (message, icon = '✨') => {
-    setToastMessage(message);
+  const notify = (msg, icon = '✅') => {
+    setToastMessage(msg);
     setToastIcon(icon);
     setShowToast(true);
-    setTimeout(() => setShowToast(false), 2500);
+    setTimeout(() => setShowToast(false), 3000);
   };
 
-  const changeFamily = (familyId, familyLabel = null) => {
-    setSelectedFamily(familyId);
-    setMembers(familiesData[familyId].members);
-    setInviteCode(null);
+  const loadFamilies = async () => {
+    setLoading(true);
+    const profileResult = await api.getProfile();
+    
+    if (profileResult.success) {
+      setCurrentUserProfile(profileResult.data);
+      let userFamiliesData = profileResult.data.families || [];
+      const rolesMap = {};
+
+      if (userFamiliesData && userFamiliesData.length > 0) {
+        // Sauvegarde préventive des rôles par id de famille depuis le profil
+        userFamiliesData.forEach(f => {
+          const idFamille = f.family_id !== undefined ? f.family_id : f.id;
+          if (idFamille && f.role) {
+            rolesMap[idFamille] = f.role;
+          }
+        });
+        setFamilyRoles(rolesMap);
+        
+        // 🚨 LE CORRECTIF INTELLIGENT 🚨
+        if (userFamiliesData[0].family_id !== undefined && userFamiliesData[0].name === undefined) {
+          const realFamilies = [];
+          for (const member of userFamiliesData) {
+            const famRes = await api.getFamily(member.family_id);
+            if (famRes.success && famRes.data.family) {
+              if (!realFamilies.find(f => f.id === famRes.data.family.id)) {
+                realFamilies.push(famRes.data.family);
+              }
+            }
+          }
+          userFamiliesData = realFamilies;
+        }
+
+        setFamilies(userFamiliesData);
+        if (userFamiliesData.length > 0) {
+          const familyToSelect = lastActiveFamilyId
+            ? userFamiliesData.find(f => f.id === lastActiveFamilyId) || userFamiliesData[0]
+            : userFamiliesData[0];
+          // On passe directement rolesMap et profile pour éviter le délai asynchrone du setState
+          selectFamily(familyToSelect, rolesMap, profileResult.data);
+        }
+      } else {
+        setFamilies([]);
+        setSelectedFamily(null);
+        setMembers([]);
+        setIsParent(false);
+        if (onFamilyChange) {
+          onFamilyChange(null);
+        }
+      }
+    }
+    setLoading(false);
+  };
+
+  const selectFamily = async (family, rolesMap = null, profile = null) => {
+    lastActiveFamilyId = family.id;
+    setSelectedFamily(family);
+    setInviteCode(family.invite_code || '');
     setShowFamilyOptions(false);
-    const label = familyLabel ?? families[familyId] ?? 'Nouveau foyer';
-    notify(`Basculé sur : ${label.replace(' (Active)', '')}`, '🔄');
+
+    if (onFamilyChange) {
+      onFamilyChange(family);
+    }
+    
+    const result = await api.getFamily(family.id);
+    if (result.success) {
+      const fetchedMembers = result.data.members || [];
+      setMembers(fetchedMembers);
+
+      // 🔐 RECHERCHE DU RÔLE DE L'UTILISATEUR CONNECTÉ
+      const currentRoles = rolesMap || familyRoles;
+      const currentProfile = profile || currentUserProfile;
+      let role = currentRoles[family.id];
+
+      // Sécurité alternative : si non trouvé dans la map du profil, on cherche dans la liste des membres du foyer
+      if (!role && currentProfile) {
+        const me = fetchedMembers.find(m => 
+          m.id === currentProfile.id || 
+          m.user_id === currentProfile.id || 
+          m.member_name === currentProfile.name
+        );
+        if (me) role = me.role;
+      }
+
+      // Seuls les "Parent" ont les accès administrateur
+      setIsParent(role === 'Parent');
+    }
   };
 
-  const toggleFamilyDropdown = () => {
-    setShowFamilyOptions((current) => !current);
+  useEffect(() => {
+    loadFamilies();
+  }, []);
+
+  const executeAddFamily = async () => {
+    if (!newFamilyName.trim()) {
+      notify('Veuillez entrer un nom', '⚠️');
+      return;
+    }
+    const result = await api.createFamily(newFamilyName, 'Parent');
+    if (result.success) {
+      setShowAddFamilyModal(false);
+      setNewFamilyName('');
+      notify('Foyer créé avec succès !', '🏠');
+      loadFamilies();
+    } else {
+      notify('Erreur lors de la création', '❌');
+    }
   };
 
-  const generateInvite = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
-    for (let i = 0; i < 2; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
-    code += '-';
-    for (let i = 0; i < 3; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
-    setInviteCode(code);
-    notify('Code généré avec succès !', '✨');
-  };
-
-  const copyInviteCode = () => {
-    if (inviteCode) {
-      // Utiliser Alert pour simuler la copie (ou intégrer une vraie solution clipboard plus tard)
-      Alert.alert('Code d\'invitation', inviteCode, [
-        { text: 'OK', onPress: () => notify('Code copié !', '📋') }
-      ]);
+  const executeJoinNewFamily = async () => {
+    const code = joinCode.toUpperCase().trim();
+    if (!code) {
+      notify('Veuillez entrer un code', '⚠️');
+      return;
+    }
+    if (!joinRole) {
+      notify('Veuillez choisir votre rôle', '⚠️');
+      return;
+    }
+    const result = await api.joinFamily(code, joinRole);
+    if (result.success) {
+      notify('Foyer rejoint avec succès !', '✅');
+      setShowJoinFamilyModal(false);
+      setJoinCode('');
+      setJoinRole('');
+      loadFamilies();
+    } else {
+      notify('Code invalide ou expiré', '❌');
     }
   };
 
@@ -415,52 +503,43 @@ export default function FamillesScreen() {
     setShowConfirmModal(true);
   };
 
-  const executeDeleteMember = () => {
+  const executeDeleteMember = async () => {
     if (memberToDelete) {
-      setMembers(members.filter(m => m.id !== memberToDelete.id));
-      notify('Membre retiré', '🗑️');
+      const result = await api.removeFamilyMember(selectedFamily.id, memberToDelete.id);
+      if (result.success) {
+        setMembers(members.filter(m => m.id !== memberToDelete.id));
+        notify('Membre retiré', '🗑️');
+
+        await loadFamilies();
+      } 
+      else {
+        notify('Erreur lors de la suppression', '❌');
+      }
     }
     setShowConfirmModal(false);
     setMemberToDelete(null);
   };
 
-  const executeAddFamily = () => {
-    if (!newFamilyName.trim()) {
-      notify('Veuillez entrer un nom', '⚠️');
-      return;
-    }
-
-    const newFamilyId = 'new_' + Date.now();
-    const newFamilies = { ...families, [newFamilyId]: newFamilyName };
-    setFamilies(newFamilies);
-    
-    familiesData[newFamilyId] = {
-      members: [
-        { id: 'm_' + Date.now(), name: 'Vous', role: 'Administrateur', roleClass: 'role-admin', bg: COLORS.accentPurpleBg, canDelete: false }
-      ]
-    };
-
-    changeFamily(newFamilyId, newFamilyName);
-    setShowAddFamilyModal(false);
-    setNewFamilyName('');
-    notify('Foyer créé avec succès !', '🏠');
-  };
-
-  const executeJoinNewFamily = () => {
-    const code = joinCode.toUpperCase().trim();
-    
-    if (code === 'K8-Z21') {
-      notify('Foyer rejoint avec succès !', '✅');
-      setShowJoinFamilyModal(false);
-      setJoinCode('');
+  const executeGenerateCode = async () => {
+    const result = await api.generateFamilyCode(selectedFamily.id);
+    if (result.success) {
+      setInviteCode(result.data.invite_code);
+      notify('Code généré (valide 2h) !', '🔑');
     } else {
-      notify('Code invalide ou expiré', '❌');
+      notify('Erreur de génération', '❌');
     }
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* TOAST */}
       {showToast && (
         <View style={styles.toast}>
           <View style={styles.toastContent}>
@@ -470,88 +549,97 @@ export default function FamillesScreen() {
         </View>
       )}
 
-      {/* HEADER */}
       <View style={styles.header}>
         <Text style={styles.pageTitle}>👨‍👩‍👧‍👦 Familles</Text>
       </View>
 
-      {/* CONTENT */}
       <ScrollView style={styles.contentScroll} showsVerticalScrollIndicator={false}>
         {/* FAMILY SELECTOR */}
-        <View style={styles.familySelectorWrapper}>
-          <View style={styles.selectorBox}>
-            <TouchableOpacity onPress={toggleFamilyDropdown} style={styles.selectorButton}>
-              <Text style={styles.selectorText}>{families[selectedFamily]}</Text>
-            </TouchableOpacity>
-          </View>
-          {showFamilyOptions && (
-            <View style={styles.selectorOptions}>
-              {Object.keys(families).map((familyId) => (
-                <TouchableOpacity
-                  key={familyId}
-                  onPress={() => changeFamily(familyId)}
-                  style={styles.familyOption}
-                >
-                  <Text
-                    style={familyId === selectedFamily ? styles.familyOptionTextActive : styles.familyOptionText}
-                  >
-                    {families[familyId]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* INVITE CARD */}
-        <View style={styles.inviteCard}>
-          <Text style={styles.inviteCardTitle}>Agrandir la famille</Text>
-          <Text style={styles.inviteCardDesc}>Invitez de nouveaux membres à rejoindre votre foyer.</Text>
-          
-          {!inviteCode ? (
-            <TouchableOpacity style={styles.btnPrimary} onPress={generateInvite}>
-              <Text style={styles.btnPrimaryText}>+ Inviter</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.inviteCodeContainer}>
-              <Text style={styles.inviteCodeLabel}>Code d'accès</Text>
-              <Text style={styles.inviteCode}>{inviteCode}</Text>
-              <Text style={styles.inviteCodeExpiry}>⏱️ Valide pour 24h</Text>
-              <TouchableOpacity style={styles.btnSecondary} onPress={copyInviteCode}>
-                <Text style={styles.btnSecondaryText}>Copier le code</Text>
+        {families.length > 0 && (
+          <View style={styles.familySelectorWrapper}>
+            <View style={styles.selectorBox}>
+              <TouchableOpacity onPress={() => setShowFamilyOptions(p => !p)} style={styles.selectorButton}>
+                <Text style={styles.selectorText}>{selectedFamily?.name || 'Choisir un foyer'}</Text>
               </TouchableOpacity>
             </View>
-          )}
-        </View>
-
-        {/* MEMBERS SECTION */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Membres ({members.length})</Text>
-        </View>
-
-        <View style={styles.memberList}>
-          {members.map((member) => (
-            <View key={member.id} style={styles.memberRow}>
-              <View style={[styles.memberAvatar, { backgroundColor: member.bg }]}>
-                <Text style={{ fontSize: 20 }}>👤</Text>
+            {showFamilyOptions && (
+              <View style={styles.selectorOptions}>
+                {families.map((family) => (
+                  <TouchableOpacity
+                    key={family.id}
+                    onPress={() => selectFamily(family)}
+                    style={styles.familyOption}
+                  >
+                    <Text style={family.id === selectedFamily?.id ? styles.familyOptionTextActive : styles.familyOptionText}>
+                      {family.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-              <View style={styles.memberInfo}>
-                <Text style={styles.memberName}>{member.name}</Text>
-                <Text style={[styles.memberRole, member.roleClass === 'role-admin' && styles.memberRoleAdmin]}>
-                  {member.role}
-                </Text>
+            )}
+          </View>
+        )}
+
+        {/* INVITE CARD 🛡️ MASQUÉE SI PAS PARENT */}
+        {selectedFamily && isParent && (
+          <View style={styles.inviteCard}>
+            <Text style={styles.inviteCardTitle}>Agrandir la famille</Text>
+            <Text style={styles.inviteCardDesc}>Générez un code sécurisé et temporaire pour inviter un proche.</Text>
+            
+            {inviteCode ? (
+              <View style={styles.inviteCodeContainer}>
+                <Text style={styles.inviteCodeLabel}>Code d'accès temporaire</Text>
+                <Text style={styles.inviteCode}>{inviteCode}</Text>
+                <Text style={styles.inviteCodeExpiry}>⏱️ Ce code expire dans 2 heures</Text>
               </View>
-              {member.canDelete && (
-                <TouchableOpacity 
-                  style={styles.btnRemoveMember}
-                  onPress={() => requestDeleteMember(member)}
-                >
-                  <Text style={{ fontSize: 16, color: COLORS.textMuted }}>✕</Text>
-                </TouchableOpacity>
+            ) : null}
+
+            <TouchableOpacity style={styles.btnPrimary} onPress={executeGenerateCode}>
+              <Text style={styles.btnPrimaryText}>
+                {inviteCode ? '🔄 Générer un nouveau code' : '+ Générer un code (2H)'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* MEMBERS */}
+        {selectedFamily && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Membres ({members.length})</Text>
+            </View>
+            <View style={styles.memberList}>
+              {members.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>Aucun membre dans ce foyer.</Text>
+                </View>
+              ) : (
+                members.map((member) => (
+                  <View key={member.id} style={styles.memberRow}>
+                    <View style={styles.memberAvatar}>
+                      <Text style={{ fontSize: 20 }}>👤</Text>
+                    </View>
+                    <View style={styles.memberInfo}>
+                      <Text style={styles.memberName}>{member.member_name}</Text>
+                      <Text style={[styles.memberRole, member.role === 'Parent' && styles.memberRoleAdmin]}>
+                        {member.role}
+                      </Text>
+                    </View>
+                    {/* 🛡️ CROIX DE SUPPRESSION MASQUÉE SI PAS PARENT */}
+                    {isParent && member.can_delete && (
+                      <TouchableOpacity
+                        style={styles.btnRemoveMember}
+                        onPress={() => requestDeleteMember(member)}
+                      >
+                        <Text style={{ fontSize: 16, color: COLORS.textMuted }}>✕</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))
               )}
             </View>
-          ))}
-        </View>
+          </>
+        )}
 
         {/* ACTION BUTTONS */}
         <TouchableOpacity style={styles.btnAddFamily} onPress={() => setShowAddFamilyModal(true)}>
@@ -559,7 +647,7 @@ export default function FamillesScreen() {
           <Text style={styles.btnAddFamilyText}>Créer un nouveau foyer</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.btnAddFamily, { borderColor: COLORS.primary, marginTop: 12 }]}
           onPress={() => setShowJoinFamilyModal(true)}
         >
@@ -568,7 +656,6 @@ export default function FamillesScreen() {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* MODALS */}
       {/* ADD FAMILY MODAL */}
       <Modal visible={showAddFamilyModal} transparent={true} animationType="fade">
         <View style={styles.modalOverlay}>
@@ -603,11 +690,35 @@ export default function FamillesScreen() {
             </Text>
             <TextInput
               style={[styles.inputField, { textTransform: 'uppercase', textAlign: 'center', letterSpacing: 3, fontWeight: '900' }]}
-              placeholder="Ex: K8-Z21"
+              placeholder="Ex: FAYE2024"
               value={joinCode}
               onChangeText={setJoinCode}
               placeholderTextColor={COLORS.textMuted}
             />
+            <Text style={{ fontSize: 13, fontWeight: '800', color: COLORS.textMuted, textTransform: 'uppercase', marginBottom: 10 }}>
+              Votre rôle dans ce foyer
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
+              {['Parent', 'Enfant', 'Tonton', 'Tante', 'Grandmère', 'Grandpère', 'Autres'].map((role) => (
+                <TouchableOpacity
+                  key={role}
+                  onPress={() => setJoinRole(role)}
+                  style={{
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                    borderRadius: 20,
+                    marginRight: 8,
+                    backgroundColor: joinRole === role ? COLORS.primary : COLORS.bgApp,
+                    borderWidth: 2,
+                    borderColor: joinRole === role ? COLORS.primary : COLORS.surfaceTint,
+                  }}
+                >
+                  <Text style={{ fontWeight: '800', fontSize: 13, color: joinRole === role ? 'white' : COLORS.textMuted }}>
+                    {role}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
             <View style={styles.modalActions}>
               <TouchableOpacity style={[styles.btnModal, styles.btnCancel]} onPress={() => setShowJoinFamilyModal(false)}>
                 <Text style={styles.btnCancelText}>Annuler</Text>
@@ -626,7 +737,7 @@ export default function FamillesScreen() {
           <View style={styles.modalContent}>
             <Text style={[styles.modalTitle, { textAlign: 'center' }]}>Retirer ce membre ?</Text>
             <Text style={{ marginBottom: 24, fontWeight: '700', color: COLORS.textMuted, fontSize: 15, textAlign: 'center' }}>
-              Voulez-vous vraiment retirer <Text style={{ color: COLORS.textDark, fontWeight: '900' }}>{memberToDelete?.name}</Text> de ce foyer ?
+              Voulez-vous vraiment retirer <Text style={{ color: COLORS.textDark, fontWeight: '900' }}>{memberToDelete?.member_name}</Text> de ce foyer ?
             </Text>
             <View style={styles.modalActions}>
               <TouchableOpacity style={[styles.btnModal, styles.btnCancel]} onPress={() => setShowConfirmModal(false)}>

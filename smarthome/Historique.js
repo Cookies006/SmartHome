@@ -1,10 +1,45 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, ScrollView, StyleSheet, Platform, ActivityIndicator, RefreshControl } from 'react-native';
 import { useTheme } from './ThemeContext';
+import * as api from './api'; // 🔌 Import de l'API
 
-export default function HistoryScreen({ historyItems = [] }) {
+export default function HistoryScreen({ activeFamily }) {
   const { theme } = useTheme();
   const COLORS = theme.colors;
+
+  // 📦 États pour gérer les données réelles du serveur
+  const [historyItems, setHistoryItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // 🔄 Fonction pour charger l'historique de la famille depuis le serveur Python
+  const loadHistory = useCallback(async () => {
+    if (!activeFamily?.id) {
+      setHistoryItems([]);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
+    const result = await api.getFamilyHistory(activeFamily.id);
+    if (result.success) {
+      setHistoryItems(result.data.data || result.data || []);
+    }
+    setLoading(false);
+    setRefreshing(false);
+  }, [activeFamily]);
+
+  // Charger les données au premier affichage ou quand on change de famille
+  useEffect(() => {
+    setLoading(true);
+    loadHistory();
+  }, [loadHistory]);
+
+  // Action de tirer pour rafraîchir la page
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadHistory();
+  };
 
   const styles = StyleSheet.create({
     outerContainer: {
@@ -37,10 +72,11 @@ export default function HistoryScreen({ historyItems = [] }) {
       fontSize: 14,
       fontWeight: '700',
     },
-    emptyState: {
+    centerState: {
       flex: 1,
       paddingHorizontal: 24,
       justifyContent: 'center',
+      alignItems: 'center',
     },
     emptyText: {
       color: COLORS.textMuted,
@@ -50,6 +86,8 @@ export default function HistoryScreen({ historyItems = [] }) {
     },
     historyList: {
       paddingHorizontal: 24,
+    },
+    historyContentList: {
       paddingBottom: 140,
     },
     historyCard: {
@@ -98,29 +136,62 @@ export default function HistoryScreen({ historyItems = [] }) {
       <View style={styles.appContainer}>
         <View style={styles.header}>
           <Text style={styles.pageTitle}>Historique des achats</Text>
-          <Text style={styles.countText}>{historyItems.length} article{historyItems.length > 1 ? 's' : ''} acheté{historyItems.length > 1 ? 's' : ''}</Text>
+          {!loading && (
+            <Text style={styles.countText}>
+              {historyItems.length} article{historyItems.length > 1 ? 's' : ''} acheté{historyItems.length > 1 ? 's' : ''}
+            </Text>
+          )}
         </View>
 
-        {historyItems.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>
-              Pas encore d'articles achetés. Coche un produit dans Courses pour le voir apparaître ici.
-            </Text>
+        {loading ? (
+          // ⏳ Écran de chargement pendant l'appel API
+          <View style={styles.centerState}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
           </View>
+        ) : historyItems.length === 0 ? (
+          <ScrollView 
+            contentContainerStyle={styles.centerState}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
+          >
+            <Text style={styles.emptyText}>
+              Pas encore d'articles achetés dans cette famille. Coche un produit dans l'onglet Courses pour le voir ici !
+            </Text>
+          </ScrollView>
         ) : (
-          <ScrollView style={styles.historyList} showsVerticalScrollIndicator={false}>
-            {historyItems.map((item) => (
-              <View key={item.id} style={styles.historyCard}>
-                <View style={styles.historyRow}>
-                  <Text style={styles.itemIcon}>{item.icon}</Text>
-                  <View style={styles.itemText}>
-                    <Text style={styles.itemName}>{item.name}</Text>
-                    <Text style={styles.itemMeta}>{item.category}</Text>
-                    <Text style={styles.itemDate}>{new Date(item.boughtAt).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</Text>
+          <ScrollView 
+            style={styles.historyList} 
+            contentContainerStyle={styles.historyContentList}
+            showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
+          >
+            {historyItems.map((item) => {
+              // Gestion de la date selon le format renvoyé par ton modèle Python (boughtAt, bought_at ou updated_at)
+              const rawDate = item.boughtAt || item.bought_at || item.updated_at || new Date().toISOString();
+              
+              return (
+                <View key={item.id} style={styles.historyCard}>
+                  <View style={styles.historyRow}>
+                    <Text style={styles.itemIcon}>{item.icon || '🛒'}</Text>
+                    <View style={styles.itemText}>
+                      <Text style={styles.itemName}>{item.name}</Text>
+                      <Text style={styles.itemMeta}>
+                        {item.category}
+                        {item.bought_by_name && ` • Par ${item.bought_by_name}`}
+                      </Text>
+                      <Text style={styles.itemDate}>
+                        {new Date(rawDate).toLocaleString('fr-FR', {
+                          weekday: 'short',
+                          day: '2-digit',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </ScrollView>
         )}
       </View>

@@ -1,12 +1,27 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AuthScreen from './Auth.js';
 import DashboardScreen from './Dashboard.js';
 import FamillesScreen from './Familles.js';
 import CoursesScreen from './Courses.js';
 import HistoryScreen from './Historique.js';
 import { ThemeProvider, useTheme } from './ThemeContext.js';
+import api from './api.js';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+
+// Indique à l'application comment se comporter si une notification arrive 
+// PENDANT que l'utilisateur est en train de l'utiliser.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 export default function App() {
   return (
@@ -16,15 +31,100 @@ export default function App() {
   );
 }
 
+async function registerForPushNotificationsAsync() {
+  let token;
+
+  // 1. Sur Android, il faut créer un "Canal" de notifications
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+    });
+  }
+
+  // 2. On vérifie qu'on est sur un vrai téléphone (les émulateurs ne reçoivent pas de push)
+  if (Device.isDevice) {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    
+    // 3. Si on n'a pas encore la permission, on la demande à l'utilisateur
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    
+    // 4. Si l'utilisateur refuse, on annule tout
+    if (finalStatus !== 'granted') {
+      console.log('Permission refusée pour les notifications.');
+      return;
+    }
+    
+    // 5. Succès ! On récupère le fameux Token
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ??
+      Constants?.easConfig?.projectId;
+    if (!projectId) {
+      console.error('❌ projectId introuvable dans app.json (extra.eas.projectId)');
+      return;
+    }
+    token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    console.log("🎉 MON PUSH TOKEN EXPO EST :", token);
+    
+  } else {
+    console.log('⚠️ Les notifications Push nécessitent un vrai téléphone, pas un émulateur.');
+  }
+
+  return token;
+}
+
 function AppContent() {
   const { theme } = useTheme();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
   const [activeScreen, setActiveScreen] = useState('dashboard');
   const [historyItems, setHistoryItems] = useState([]);
+  const [activeFamily, setActiveFamily] = useState(null);
 
-  const handleLoginSuccess = () => {
+  const [pushToken, setPushToken] = useState(null);
+
+  // Récupère le token au démarrage
+  useEffect(() => {
+    registerForPushNotificationsAsync().then(token => {
+      if (token) {
+        setPushToken(token);
+        console.log('🎟️ Token mis en attente :', token);
+      }
+    });
+  }, []);
+
+  // Dès que le token arrive ET qu'on est déjà connecté → on l'envoie
+  useEffect(() => {
+    if (pushToken && isLoggedIn) {
+      sendPushToken(pushToken);
+    }
+  }, [pushToken, isLoggedIn]);
+
+  const sendPushToken = async (token) => {
+    try {
+      await api.savePushToken(token);
+      console.log('📱 Token envoyé au serveur avec succès !');
+    } catch (err) {
+      console.error("Erreur lors de l'envoi du token", err);
+    }
+  };
+
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
     setIsLoggedIn(true);
     setActiveScreen('dashboard');
+
+    // Token déjà dispo → on envoie immédiatement
+    if (pushToken) {
+      sendPushToken(pushToken);
+    }
+    // Sinon on attend qu'il arrive (useEffect le détectera)
   };
 
   const addHistoryItem = (item) => {
@@ -33,15 +133,23 @@ function AppContent() {
 
   const renderScreen = () => {
     if (activeScreen === 'courses') {
-      return <CoursesScreen onMarkBought={addHistoryItem} />;
+      return <CoursesScreen onMarkBought={addHistoryItem} activeFamily={activeFamily} />;
     }
     if (activeScreen === 'history') {
-      return <HistoryScreen historyItems={historyItems} />;
-    }
+  return <HistoryScreen activeFamily={activeFamily} />;
+   }
     if (activeScreen === 'familles') {
-      return <FamillesScreen />;
+      return <FamillesScreen activeFamily={activeFamily} onFamilyChange={setActiveFamily} />;
     }
-    return <DashboardScreen onNavigate={setActiveScreen} onLogout={() => setIsLoggedIn(false)} />;
+    return (
+      <DashboardScreen
+        user={user}
+        activeFamily={activeFamily}
+        onFamilyChange={setActiveFamily}
+        onNavigate={setActiveScreen}
+        onLogout={() => { setIsLoggedIn(false); setUser(null); setActiveFamily(null); }}
+      />
+    );
   };
 
   return (
